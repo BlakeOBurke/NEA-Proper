@@ -44,8 +44,6 @@ namespace OpenTk26_3
 
         Shader shader;
 
-        public static Terrain A = new Terrain(false);
-
         public Game(int width, int height) : base(width, height, GraphicsMode.Default, "game")
         {
 
@@ -243,83 +241,9 @@ namespace OpenTk26_3
                 }
             }
 
-            if(input.IsKeyDown(Key.F))
-            {
-                while (A.pieces[0].MOVERERER.time != 0 && A.pieces[0].MOVERERER != null)
-                {
-                    for (int i = 0; i < A.pieces.Count; i++)
-                    {
-                        A.pieces[i].Move();
-                        A.pieces[i].TerrainHeightsMove();
-                    }
-                }
-                /*for (int i = 0; i < A.heights.GetLength(0); i++)
-                {
-                    for (int j = 0; j < A.heights.GetLength(1); j++)
-                    {
-                        A.pieces[i*A.heights.GetLength(0)+j].SetHeights(A.heights, new Vector2(i, j));
-                    }
-                }*/
-
-                
-            }
-
             for (int i = 0; i < Shape.Models.Count(); i++)
             {
                 Shape.Models[i].Move();
-            }
-        }
-        public void drawTerrain(Terrain T, int a, Matrix4 proj)
-        {
-            for (int i = 0; i < a; i++)
-            {
-                for (int j = 0; j < a; j++)
-                {
-                    for (int z = 0; z < T.pieces.Count(); z++)
-                    {
-                        Matrix4 model = modelMat(T.pieces[z]) * Matrix4.CreateTranslation(new Vector3(i * T.gridSize,0,j*T.gridSize));
-
-                        //GL.BindVertexArray(VertexArrayObject);
-
-
-                        //GL.Uniform1(location:(proj), 1);
-                        Matrix4 aproj = Matrix4.CreateScale(T.pieces[z].scale) * model * proj;
-
-                        int uniID = GL.GetUniformLocation(3, "projection");
-
-                        GL.UniformMatrix4(uniID, true, ref aproj);
-
-                        vertices = T.pieces[z].GetFloat();
-                        indices = T.pieces[z].triangle;
-
-
-                        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
-                        GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
-
-
-                        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                        GL.EnableVertexAttribArray(0);
-
-
-                        GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                        GL.EnableVertexAttribArray(1);
-
-
-
-                        GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
-                        GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
-
-
-                        shader.Use();
-
-
-
-                        GL.BindVertexArray(VertexArrayObject);
-
-                        GL.DrawElements(PrimitiveType.Triangles, indices.Length, DrawElementsType.UnsignedInt, 0);
-                    }
-                    
-                }
             }
         }
 
@@ -345,13 +269,8 @@ namespace OpenTk26_3
                 indices = a[i].triangle;
 
 
-                //indices = Program.getinds();
-
-                //Program.doLight(ref vertices,indices);
-
                 GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
                 GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
-                //shader = new Shader("shader.vert.txt", "shader.frag.txt");
 
 
                 GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
@@ -369,16 +288,8 @@ namespace OpenTk26_3
 
                 shader.Use();
 
-                //GL.UseProgram();
-                //GL.BindVertexArray(VertexArrayObject);
-                //GL.CullFace(CullFaceMode.Back);
-
-
-
-
 
                 GL.BindVertexArray(VertexArrayObject);
-                Console.WriteLine(VertexArrayObject);
 
                 GL.DrawElements(PrimitiveType.Triangles, indices.Length, DrawElementsType.UnsignedInt, 0);
 
@@ -395,67 +306,8 @@ namespace OpenTk26_3
             models.AddRange(Kart.Cars);
             //models.AddRange(A.pieces);
             drawObj(models, pro(player));
-            drawTerrain(A, 1, pro(player));
+            //drawTerrain(A, 1, pro(player));
 
-            /*for (int i = 0; i < Shape.Models.Count(); i++)
-            {
-                Matrix4 proj = Program.pro();
-
-
-                Matrix4 model = Program.modelMat(Shape.Models[i]);
-
-                //GL.BindVertexArray(VertexArrayObject);
-
-
-                //GL.Uniform1(location:(proj), 1);
-                proj = model * proj;
-
-                int uniID = GL.GetUniformLocation(3, "projection");
-
-                GL.UniformMatrix4(uniID, true, ref proj);
-
-                vertices = Shape.Models[i].GetFloat();
-                indices = Shape.Models[i].triangle;
-
-
-                //indices = Program.getinds();
-
-                //Program.doLight(ref vertices,indices);
-
-                GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
-                GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
-                //shader = new Shader("shader.vert.txt", "shader.frag.txt");
-
-
-                GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                GL.EnableVertexAttribArray(0);
-
-
-                GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                GL.EnableVertexAttribArray(1);
-
-
-
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
-                GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
-
-
-                shader.Use();
-
-                //GL.UseProgram();
-                //GL.BindVertexArray(VertexArrayObject);
-                //GL.CullFace(CullFaceMode.Back);
-
-
-
-
-
-                GL.BindVertexArray(VertexArrayObject);
-
-                GL.DrawElements(PrimitiveType.Triangles, indices.Length, DrawElementsType.UnsignedInt, 0);
-
-
-            }   */
 
             Console.WriteLine(Shape.shapes.Sum() + " " + Shape.Models.Count());
 
@@ -633,7 +485,7 @@ namespace OpenTk26_3
             }
         }
     }
-    public abstract class Shape
+    public class Shape
     {
         public Vector3 angle;
         public int count;
@@ -824,10 +676,7 @@ namespace OpenTk26_3
             }
         }
     }
-    public class model : Shape
-    {
-        public model(string path, Color color) : base(path, color) { }
-    }
+
     public class Kart : Shape
     {
         public static List<Kart> Cars = new List<Kart>();
@@ -861,112 +710,7 @@ namespace OpenTk26_3
             Console.Write(acceleration);
         }
     }
-    public class Terrain
-    {
-        public const float pieceSize = 20 * meter;
-        public float[,] heights = new float[64, 64];
-        public float gridSize = 64 * pieceSize;
-        public List<TerrainPiece> pieces = new List<TerrainPiece>();
-        public Terrain()
-        {
-            heights = Perlin.DoPerlin(heights,0,0);
-            for (int i = 0; i < heights.GetLength(0); i++)
-            {
-                for (int j = 0; j < heights.GetLength(1); j++)
-                {
-                    pieces.Add(new TerrainPiece(randomColor()));
-                    pieces.Last().Scale(pieceSize);
 
-                    //all of the squares start centred at 0,0   I move it to the bottom left corner at 0,0 and move it based on the i,j grid
-                    pieces.Last().SetPosVerts(new Vector3(+pieceSize/2f,0,+pieceSize/2f)+ i*new Vector3(0,0,pieceSize) + j*new Vector3(pieceSize,0,0),new Vector3(0,0,0));
-
-                    int a = rnd.Next(60, 300);
-                    pieces.Last().MakeMovement(new Vector3(0, 10*(tStep)/a, 0), new Vector3(0, 0, 0), a);
-                    pieces.Last().HeightsMove(new Vector2(i, j), 30);
-                }
-            }
-        }
-        /// <summary>
-        /// testing version, not laggy
-        /// </summary>
-        /// <param name="a"></param>
-        public Terrain(bool a)
-        {
-            heights = Perlin.DoPerlin(heights, 0, 0);
-            for (int i = 0; i < heights.GetLength(0); i++)
-            {
-                for (int j = 0; j < heights.GetLength(1); j++)
-                {
-                    pieces.Add(new TerrainPiece(randomColor()));
-                    pieces.Last().Scale(pieceSize);
-
-                    //all of the squares start centred at 0,0   I move it to the bottom left corner at 0,0 and move it based on the i,j grid
-                    pieces.Last().SetPosVerts(new Vector3(+pieceSize / 2f, 0, +pieceSize / 2f) + i * new Vector3(0, 0, pieceSize) + j * new Vector3(pieceSize, 0, 0), new Vector3(0, 0, 0));
-
-                    pieces.Last().SetHeights(heights, new Vector2(i, j), 30f);
-                }
-            }
-        }
-    }
-    public class TerrainPiece : Shape
-    {
-        const float heightMulti = 5;
-        public heightsMove MOVERERER;
-        public TerrainPiece(Color color) : base(color)
-        {
-            
-        }
-        public void HeightsMove(Vector2 coords, int time)
-        {
-            MOVERERER = new heightsMove(coords, time);
-        }
-        public void TerrainHeightsMove()
-        {
-            if(MOVERERER.time != 0)
-            {
-                SetHeights(A.heights, MOVERERER.coords,1f);
-                MOVERERER.time--;
-            }
-        }
-        public class heightsMove
-        {
-            public Vector2 coords;
-            public int time;
-            public heightsMove(Vector2 coords, int time)
-            {
-                this.coords = coords;
-                this.time = time;
-            }
-        }
-        public void SetHeights(float[,] heights, Vector2 coords, float multiplier)
-        {
-            verts[0].pos.Y += heightMulti * heights[(int)coords.X, (int)coords.Y] * tStep * multiplier;
-            try
-            {
-                verts[1].pos.Y += heightMulti * heights[(int)coords.X + 1, (int)coords.Y] * tStep * multiplier;
-            }
-            catch
-            {
-                verts[1].pos.Y += heightMulti * heights[(int)coords.X, (int)coords.Y] * tStep * multiplier;
-            }
-            try
-            {
-                verts[2].pos.Y += heightMulti * heights[(int)coords.X, (int)coords.Y + 1] * tStep * multiplier;
-            }
-            catch
-            {
-                verts[2].pos.Y += heightMulti * heights[(int)coords.X, (int)coords.Y] * tStep * multiplier;
-            }
-            try
-            {
-                verts[3].pos.Y += heightMulti * heights[(int)coords.X + 1, (int)coords.Y + 1] * tStep * multiplier;
-            }
-            catch
-            {
-                verts[3].pos.Y += heightMulti * heights[(int)coords.X, (int)coords.Y] * tStep * multiplier;
-            }
-        }
-    }
     public class Perlin
     {
         public static float[,] DoPerlin(float[,] c, float Ox, float Oy)
