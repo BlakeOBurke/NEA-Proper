@@ -20,6 +20,7 @@ using System.Security.Policy;
 using static OpenTk26_3.Game;
 using System.Net.NetworkInformation;
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 
 namespace OpenTk26_3
 {
@@ -43,6 +44,8 @@ namespace OpenTk26_3
         public static Game.camera player = new Game.camera(0, 0, 0);
 
         Shader shader;
+
+        Terrain landscape;
 
         public Game(int width, int height) : base(width, height, GraphicsMode.Default, "game")
         {
@@ -169,8 +172,8 @@ namespace OpenTk26_3
 
             GL.ClearColor(Color.CornflowerBlue);
 
-            Kart.Cars.Add(new Kart(randomColor()));
-            Kart.Cars.Last().Scale(3);
+            /*Kart.Cars.Add(new Kart(randomColor()));
+            Kart.Cars.Last().Scale(3);*/
 
 
             VertexBufferObject = GL.GenBuffer();
@@ -206,6 +209,12 @@ namespace OpenTk26_3
             GL.Enable(EnableCap.DepthTest);
 
             MOUSEX = 0; MOUSEY = 0;
+
+
+            Kart.Cars.Add(new Kart(randomColor()));
+            Kart.Cars.Last().Scale(3);
+
+            landscape = new Terrain();
         }
         protected override void OnUnload(EventArgs e)
         {
@@ -229,8 +238,8 @@ namespace OpenTk26_3
 
             if (input.IsKeyDown(Key.Space))
             {
-                Shape.Models.Add(new Kart(randomColor()));
-                Shape.Models.Last().Scale(3);
+                //Shape.Models.Add(new Kart(randomColor()));
+                //Shape.Models.Last().Scale(3);
             }
 
             if (input.IsKeyDown(Key.R))
@@ -289,9 +298,9 @@ namespace OpenTk26_3
                 shader.Use();
 
 
-                GL.BindVertexArray(VertexArrayObject);
+                GL.BindVertexArray(a[i].VertexArrayObject);
 
-                GL.DrawElements(PrimitiveType.Triangles, indices.Length, DrawElementsType.UnsignedInt, 0);
+                GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
 
 
             }
@@ -304,6 +313,8 @@ namespace OpenTk26_3
             List<Shape> models = new List<Shape>();
             models.AddRange(Shape.Models);
             models.AddRange(Kart.Cars);
+            models.Add(landscape.terrain);
+            //models.Add(water.terrain);
             //models.AddRange(A.pieces);
             drawObj(models, pro(player));
             //drawTerrain(A, 1, pro(player));
@@ -503,6 +514,10 @@ namespace OpenTk26_3
 
         public List<Movement> Moves = new List<Movement>();
 
+        public int VertexBufferObject;
+        public int ElementBufferObject;
+        public int VertexArrayObject;
+
         public Shape(string path, Color color)
         {
 
@@ -520,7 +535,7 @@ namespace OpenTk26_3
                 if (inp[i].Substring(0, 2) == "v ")
                 {
                     string[] point = inp[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    ver.Add(new vertex(new Vector3(float.Parse(point[1]), float.Parse(point[2]), float.Parse(point[3])), Color.FromArgb(50, ((int)col[0] + Game.rnd.Next(-50, 50)), ((int)col[1] + Game.rnd.Next(-50, 50)), ((int)col[2] + Game.rnd.Next(-50, 50)))));
+                    ver.Add(new vertex(new Vector3(float.Parse(point[1]), float.Parse(point[2]), float.Parse(point[3])), Color.FromArgb(50, Math.Abs((int)col[0] + Game.rnd.Next(-50, 50)), Math.Abs((int)col[1] + Game.rnd.Next(-50, 50)), Math.Abs((int)col[2] + Game.rnd.Next(-50, 50)))));
                 }
                 else if (inp[i].Substring(0, 2) == "f ")
                 {
@@ -537,7 +552,7 @@ namespace OpenTk26_3
 
 
             this.centre = avgPos();
-            this.count = this.verts.Count();
+            this.count = this.triangle.Count();
 
             this.angle = new Vector3(0, 0, 0);
 
@@ -546,6 +561,32 @@ namespace OpenTk26_3
 
             this.centre = avgPos();
             shapes.Add(count);
+
+
+
+            //this.VertexBufferObject = GL.GenBuffer();
+
+            //GL.BindBuffer(BufferTarget.ArrayBuffer, this.VertexBufferObject);
+            //GL.BufferData(BufferTarget.ArrayBuffer, GetFloat().Length * sizeof(float), GetFloat(), BufferUsageHint.StreamDraw);
+
+
+            //this.ElementBufferObject = GL.GenBuffer();
+
+            //GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.ElementBufferObject);
+            //GL.BufferData(BufferTarget.ElementArrayBuffer, triangle.Length * sizeof(uint), triangle, BufferUsageHint.StreamDraw);
+
+            //GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            //GL.EnableVertexAttribArray(0);
+
+            //GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            //GL.EnableVertexAttribArray(1);
+
+
+
+
+            //this.VertexArrayObject = GL.GenVertexArray();
+
+            //GL.BindVertexArray(this.VertexArrayObject);
         }
         public Shape(Color color)
         {
@@ -606,7 +647,7 @@ namespace OpenTk26_3
             moverr = moova1 * moverr * moova2;
             angle += rotation;
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < verts.Count(); i++)
             {
                 verts[i] = new vertex(moverr * (new Vector4(verts[i].pos[0], verts[i].pos[1], verts[i].pos[2], 1)), verts[i].color);
             }
@@ -627,7 +668,7 @@ namespace OpenTk26_3
         {
             //gets all of the information about the vertices to send to the graphics as a single array
             float[] result = new float[count * 6];
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < verts.Count(); i++)
             {
                 result[i * 6] = verts[i].pos[0];
                 result[i * 6 + 1] = verts[i].pos[1];
@@ -709,6 +750,32 @@ namespace OpenTk26_3
             }
             Console.Write(acceleration);
         }
+    }
+
+    public class Terrain
+    {
+        public Shape terrain;
+        float[,] heights = new float[256,256];
+        public Terrain()
+        {
+            heights = Perlin.DoPerlin(heights, 0, 0);
+            terrain = new Shape("256_good.obj", Color.Green);
+            terrain.Scale(20*meter);
+            for (int i = 0; i < heights.GetLength(0); i++)
+            {
+                for (int j = 0; j < heights.GetLength(1); j++)
+                {
+                    terrain.verts[256 * (i) + j].pos.Y += (float)Math.Pow(Math.E,heights[i, j]) * 20*meter;
+                }
+            }
+        }        
+        public Terrain(bool TRUE)
+        {
+            heights = Perlin.DoPerlin(heights, 0, 0);
+            terrain = new Shape("256_good.obj", Color.FromArgb(255,0,0,205));
+            terrain.Scale(20*meter);
+        }
+
     }
 
     public class Perlin
