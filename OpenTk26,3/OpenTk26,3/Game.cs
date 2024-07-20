@@ -177,32 +177,32 @@ namespace OpenTk26_3
             Kart.Cars.Last().Scale(3);*/
 
 
-            VertexBufferObject = GL.GenBuffer();
+            //VertexBufferObject = GL.GenBuffer();
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StreamDraw);
+            //GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
+            //GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StreamDraw);
 
 
-            ElementBufferObject = GL.GenBuffer();
+            //ElementBufferObject = GL.GenBuffer();
 
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StreamDraw);
+            //GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
+            //GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StreamDraw);
 
 
             shader = new Shader("shader.vert.txt", "shader.frag.txt");
 
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-            GL.EnableVertexAttribArray(0);
+            //GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            //GL.EnableVertexAttribArray(0);
 
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-            GL.EnableVertexAttribArray(1);
-
-
+            //GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            //GL.EnableVertexAttribArray(1);
 
 
-            VertexArrayObject = GL.GenVertexArray();
 
-            GL.BindVertexArray(VertexArrayObject);
+
+            //VertexArrayObject = GL.GenVertexArray();
+
+            //GL.BindVertexArray(VertexArrayObject);
 
 
             //GL.Enable(EnableCap.)
@@ -240,8 +240,9 @@ namespace OpenTk26_3
 
             if (input.IsKeyDown(Key.Space))
             {
-                //Shape.Models.Add(new Kart(randomColor()));
-                //Shape.Models.Last().Scale(3);
+                Shape.Models.Add(new Kart(randomColor()));
+                Shape.Models.Last().Scale(3);
+                Shape.Models.Last().SetPos(new Vector3(rnd.Next(1000),rnd.Next(1000), rnd.Next(1000)));
             }
 
             if (input.IsKeyDown(Key.R))
@@ -254,6 +255,8 @@ namespace OpenTk26_3
 
             for (int i = 0; i < Shape.Models.Count(); i++)
             {
+                Shape.Models[i].MakeMovement(new Vector3(0,0,0),new Vector3(0.1777f, 2*0.1777f, 0), 1);
+
                 Shape.Models[i].Move();
             }
         }
@@ -276,37 +279,55 @@ namespace OpenTk26_3
 
                 GL.UniformMatrix4(uniID, true, ref aproj);
 
-                vertices = a[i].GetFloat();
-                indices = a[i].triangle;
+                //vertices = a[i].GetFloat();
+                //indices = a[i].triangle;
 
 
-                GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
-                GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
+                //GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
+                //GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
 
 
-                GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                GL.EnableVertexAttribArray(0);
+                //GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+                //GL.EnableVertexAttribArray(0);
 
 
-                GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                GL.EnableVertexAttribArray(1);
+                //GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+                //GL.EnableVertexAttribArray(1);
 
 
 
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
-                GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
+                //GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
+                //GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
+
+                GL.BindVertexArray(a[i].VertexArrayObject);
+
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, a[i].VertexBufferObject);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, a[i].ElementBufferObject);
+
+
+                GL.VertexAttribPointer(a[i].VertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+                GL.EnableVertexAttribArray(a[i].VertexBufferObject);
+
+
+                GL.VertexAttribPointer(a[i].ElementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+                GL.EnableVertexAttribArray(a[i].ElementBufferObject);
+
+
 
 
                 shader.Use();
 
 
-                GL.BindVertexArray(a[i].VertexArrayObject);
 
                 GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
 
 
 
-                
+                //GL.EnableVertexAttribArray(a.VBO);
+
+
+
             }
         }
         protected override void OnRenderFrame(FrameEventArgs e)
@@ -325,7 +346,7 @@ namespace OpenTk26_3
             //drawTerrain(A, 1, pro(player));
 
 
-            //Console.WriteLine(Shape.shapes.Sum() + " " + Shape.Models.Count());
+            Console.WriteLine(Shape.shapes.Sum() + " " + Shape.Models.Count());
 
             shader.Dispose();
 
@@ -569,29 +590,43 @@ namespace OpenTk26_3
 
 
 
-            //this.VertexBufferObject = GL.GenBuffer();
+            doBuffers();
 
-            //GL.BindBuffer(BufferTarget.ArrayBuffer, this.VertexBufferObject);
-            //GL.BufferData(BufferTarget.ArrayBuffer, GetFloat().Length * sizeof(float), GetFloat(), BufferUsageHint.StreamDraw);
+        }
+        public void doBuffers()
+        {
 
+            this.VertexBufferObject = GL.GenBuffer();
+            this.ElementBufferObject = GL.GenBuffer();
+            this.VertexArrayObject = GL.GenVertexArray();
 
-            //this.ElementBufferObject = GL.GenBuffer();
-
-            //GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.ElementBufferObject);
-            //GL.BufferData(BufferTarget.ElementArrayBuffer, triangle.Length * sizeof(uint), triangle, BufferUsageHint.StreamDraw);
-
-            //GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-            //GL.EnableVertexAttribArray(0);
-
-            //GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-            //GL.EnableVertexAttribArray(1);
-
-
+            resetBuffers();
+        }
+        public void resetBuffers()
+        {
+            float[] vertices = GetFloat();
+            uint[] indices = triangle;
 
 
-            //this.VertexArrayObject = GL.GenVertexArray();
+            GL.BindVertexArray(VertexArrayObject);
 
-            //GL.BindVertexArray(this.VertexArrayObject);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
+
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
+
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(0);
+
+
+            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.EnableVertexAttribArray(1);
+
+
+
+
+
         }
         public Shape(Color color)
         {
@@ -836,6 +871,9 @@ namespace OpenTk26_3
                     }
                 }
             }
+
+
+            terrain.resetBuffers();
         }
 
     }
