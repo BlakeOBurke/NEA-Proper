@@ -46,6 +46,7 @@ namespace OpenTk26_3
         Shader shader;
 
         Terrain landscape;
+        Terrain racetrack;
 
         public Game(int width, int height) : base(width, height, GraphicsMode.Default, "game")
         {
@@ -215,6 +216,7 @@ namespace OpenTk26_3
             Kart.Cars.Last().Scale(3);
 
             landscape = new Terrain();
+            racetrack = new Terrain("circle");
         }
         protected override void OnUnload(EventArgs e)
         {
@@ -303,6 +305,8 @@ namespace OpenTk26_3
                 GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
 
 
+
+                
             }
         }
         protected override void OnRenderFrame(FrameEventArgs e)
@@ -314,13 +318,14 @@ namespace OpenTk26_3
             models.AddRange(Shape.Models);
             models.AddRange(Kart.Cars);
             models.Add(landscape.terrain);
+            models.Add(racetrack.terrain);
             //models.Add(water.terrain);
             //models.AddRange(A.pieces);
             drawObj(models, pro(player));
             //drawTerrain(A, 1, pro(player));
 
 
-            Console.WriteLine(Shape.shapes.Sum() + " " + Shape.Models.Count());
+            //Console.WriteLine(Shape.shapes.Sum() + " " + Shape.Models.Count());
 
             shader.Dispose();
 
@@ -759,21 +764,78 @@ namespace OpenTk26_3
         public Terrain()
         {
             heights = Perlin.DoPerlin(heights, 0, 0);
-            terrain = new Shape("256_good.obj", Color.Green);
-            terrain.Scale(20*meter);
+            List<float> temporary = new List<float>();
             for (int i = 0; i < heights.GetLength(0); i++)
             {
                 for (int j = 0; j < heights.GetLength(1); j++)
                 {
-                    terrain.verts[256 * (i) + j].pos.Y += (float)Math.Pow(Math.E,heights[i, j]) * 20*meter;
+                    temporary.Add(heights[i, j]);
+                }
+            }
+            Console.WriteLine(temporary.Min());
+            Console.WriteLine(temporary.Max());
+
+            terrain = new Shape("256_good.obj", Color.Green);
+            terrain.Scale(10*meter);
+            for (int i = 0; i < heights.GetLength(0); i++)
+            {
+                for (int j = 0; j < heights.GetLength(1); j++)
+                {
+                    terrain.verts[256 * (i) + j].pos.Y += (float)Math.Pow(Math.E,heights[i, j]) * 15*meter;
+
+                    Color col = terrain.verts[256 * i + j].color;
+                    terrain.verts[256 * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(heights[i, j] / Math.Sqrt(2) * 255), 255))/2, col.B);
                 }
             }
         }        
-        public Terrain(bool TRUE)
+        public Terrain(string shape)
         {
             heights = Perlin.DoPerlin(heights, 0, 0);
-            terrain = new Shape("256_good.obj", Color.FromArgb(255,0,0,205));
-            terrain.Scale(20*meter);
+            List<float> temporary = new List<float>();
+            for (int i = 0; i < heights.GetLength(0); i++)
+            {
+                for (int j = 0; j < heights.GetLength(1); j++)
+                {
+                    temporary.Add(heights[i, j]);
+                }
+            }
+            Console.WriteLine(temporary.Min());
+            Console.WriteLine(temporary.Max());
+
+            terrain = new Shape("256_good.obj", Color.Black);
+            terrain.Scale(10 * meter);
+
+            for (int i = 0; i < heights.GetLength(0); i++)
+            {
+                for (int j = 0; j < heights.GetLength(1); j++)
+                {
+                    terrain.verts[256 * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * 15 * meter;
+
+                    Color col = terrain.verts[256 * i + j].color;
+                    terrain.verts[256 * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(heights[i, j] / Math.Sqrt(2) * 255), 255)) / 2, col.B);
+                    //terrain.verts[256 * i + j].color = Color.FromArgb(0,0,0);
+                }
+            }
+
+            int centrex = 127;
+            int centrey = 127;
+            int circleMin = 95;
+            int circleMax = 110;
+
+            for (int i = 0; i < heights.GetLength(0); i++)
+            {
+                for( int j = 0;j < heights.GetLength(1); j++)
+                {
+                    if(Math.Sqrt((j-centrey)*(j-centrey) + (i-centrex) * (i-centrex)) >= circleMin && Math.Sqrt((j - centrey) * (j - centrey) + (i - centrex) * (i - centrex)) <= circleMax)
+                    {
+                        terrain.verts[256 * (i) + j].pos.Y += .7f;
+                    }
+                    else
+                    {
+                        terrain.verts[256 * (i) + j].pos.Y -= 2;
+                    }
+                }
+            }
         }
 
     }
@@ -825,7 +887,6 @@ namespace OpenTk26_3
                     a[i, j] = (a[i, j] - min) / (max - min);
                 }
             }*/
-
             return a;
         }
         static float EvaluateFBM(float x, float y, float amplitude, float frequency, int octaveCount, float persistence, float lacunarity)
@@ -898,7 +959,8 @@ namespace OpenTk26_3
             ix1 = interpolate(n0, n1, sx);
 
             value = interpolate(ix0, ix1, sy);
-            return value /** 0.5f*/ + 0.5f;
+
+            return value +0.5f;
         }
     }
 }
