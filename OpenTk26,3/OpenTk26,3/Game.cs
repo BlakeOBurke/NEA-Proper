@@ -42,7 +42,7 @@ namespace OpenTk26_3
         //distance from car to camera in follow modes
         public static float camDistance = 20;
 
-        public static float maxCarAcceleration = .125f;
+        public static float maxCarAcceleration = .25f;
         public static float maxCarVelocity = 2.5f;
 
         public const float tStep = 1 / 30f;
@@ -222,32 +222,46 @@ namespace OpenTk26_3
 
         public static void DriveCar(Kart car, KeyboardState input)
         {
-            bool powerred = false;
+
+
             if (input.IsKeyDown(Key.Up))
             {
-                car.SetPos(new Vector3(0, 0, 1));
+                car.velocity += car.getForward() * maxCarAcceleration;
             }
             else if (input.IsKeyDown(Key.Down))
             {
-                car.SetPos(new Vector3(0, 0, -1));
-                //powerred = true; powerred = true;
-                //car.acceleration -= car.CarForward();
+                car.velocity -= car.getForward() * maxCarAcceleration;
             }
+
             if (input.IsKeyDown(Key.Right))
             {
-                car.SetPos(new Vector3(-1 , 0, 0));
-                //car.acceleration += Vector3.Cross(car.CarForward(), new Vector3(0, 1, 0));
-                //car.velocity = car.velocity * Matrix3.CreateRotationY(car.angle.Y+0.1f*tStep);
+                if (car.velocity.Length > .5f)
+                {
+                    car.angle.Y -= 0.02f * car.velocity.Length;
+                }
             }
 
             else if (input.IsKeyDown(Key.Left))
             {
-                car.SetPos(new Vector3(1, 0, 0));
-                //car.acceleration -= Vector3.Cross(car.CarForward(), new Vector3(0, 1, 0));
-                //car.velocity = car.velocity * Matrix3.CreateRotationY(car.angle.Y-0.1f*tStep);
+                if (car.velocity.Length > .5f)
+                {
+                    car.angle.Y += 0.02f * car.velocity.Length;
+                }
+            }
+            if (input.IsKeyDown(Key.P))
+            {
+
+                car.angle.Y += 0.02f;
             }
 
-
+            if (car.velocity.Length > maxCarVelocity)
+            {
+                car.velocity = car.velocity.Normalized() * maxCarVelocity;
+            }
+            car.velocity *= 0.95f;
+            Console.WriteLine(car.velocity.Length);
+            car.SetPos(car.velocity);
+            //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -299,7 +313,7 @@ namespace OpenTk26_3
             //FreeCam(ref player, input);
             //FreeMouse(ref player);
             FreeFollowCam(ref player, Kart.Cars[0]);
-            DriveCar(Kart.Cars[0], input);
+           
 
 
             if (input.IsKeyDown(Key.Space))
@@ -327,6 +341,8 @@ namespace OpenTk26_3
 
 
 
+            DriveCar(Kart.Cars[0], input);
+
             for (int i = 0; i < Kart.Cars.Count(); i++)
             {
                 tripleCollide(racetrack, Kart.Cars[i], out Vector2 raceAngle, out float tHeight);
@@ -340,6 +356,7 @@ namespace OpenTk26_3
                 Kart.Cars[i].angle.X = grassAngle.X;
                 Kart.Cars[i].angle.Z = grassAngle.Y;
             }
+
 
             if (input.IsKeyDown(Key.Y))
             {
@@ -496,6 +513,7 @@ namespace OpenTk26_3
         public static Matrix4 modelMat(Shape shapee)
         {
             Matrix4 mov = Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateTranslation(shapee.centre);
+            //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
             return mov;
         }
         public static Matrix4 pro(camera cam)
@@ -614,19 +632,38 @@ namespace OpenTk26_3
         public int tripleCollide(Terrain terrain, Shape Shape, out Vector2 angle, out float height)
         {
             //wrapper function, collide 3 points on the car to find the angle of the terrain and make and average position
-            Shape.GetDimension();
+            //Shape.GetDimension();
             Collision(terrain, Shape.centre + new Vector3(0, 0, Shape.dimensions.Z / 2), out float height1);
             Collision(terrain, Shape.centre + new Vector3(-Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height2);
             Collision(terrain, Shape.centre + new Vector3(+Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height3);
+            //Matrix3 rotation = Matrix3.CreateRotationZ(-Shape.angle[2]) * Matrix3.CreateRotationY(-Shape.angle[1]) * Matrix3.CreateRotationX(-Shape.angle[0]);
+            //Matrix3 rotation = Matrix3.CreateRotationY(-Shape.angle[1]);
+
+            ///////
+            //Collision(terrain, Shape.centre + Shape.getForward().Normalized() * (Shape.dimensions.Z / 2), out float height1);
+            //Collision(terrain, Shape.centre - Shape.getForward().Normalized() * (Shape.dimensions.Z / 2) + Vector3.Cross(Shape.getForward().Normalized(), new Vector3(0, 1, 0)) * (Shape.dimensions.X / 2), out float height2);
+            //Collision(terrain, Shape.centre - Shape.getForward().Normalized() * (Shape.dimensions.Z / 2) + Vector3.Cross(Shape.getForward().Normalized(), new Vector3(0, 1, 0)) * -(Shape.dimensions.X / 2), out float height3);
+
+
+
+            //Collision(terrain, Shape.centre + rotation * new Vector3(0, 0, Shape.dimensions.Z / 2), out float height1);
+            //Collision(terrain, Shape.centre + rotation * new Vector3(-Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height2);
+            //Collision(terrain, Shape.centre + rotation * new Vector3(+Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height3);
+
+            //Collision(terrain, Shape.centre + new Vector3(-Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height2);
+            //Collision(terrain, Shape.centre + new Vector3(+Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height3);
+            //Shape.getForward().Normalized() *
 
             // 1
             //2 3
 
             height = (height1 + height2 + height3) / 3f;
-
+            
             angle = new Vector2(0,0);
             //pitch and roll only needed, yaw based on the movement
-            angle.X = (float)Math.Asin((- height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
+            //angle.X = (float)Math.Asin((- height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
+            //angle.Y = (float)Math.Asin((height3-height2)/Shape.dimensions.X);            
+            angle.X = (float)Math.Asin((-height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
             angle.Y = (float)Math.Asin((height3-height2)/Shape.dimensions.X);
             return 0;
 
@@ -994,6 +1031,14 @@ namespace OpenTk26_3
                 this.times = times;
             }
         }
+        public Vector3 getForward()
+        {
+            //Matrix4 rotation = Matrix4.CreateRotationZ(-angle[2]) * Matrix4.CreateRotationY(-angle[1]) * Matrix4.CreateRotationX(-angle[0]);
+            //Vector4 ouut = (rotation * new Vector4(new Vector3(0, 0, 1), 1));
+            Matrix3 rotation = Matrix3.CreateRotationZ(-angle[2]) * Matrix3.CreateRotationY(-angle[1]) * Matrix3.CreateRotationX(-angle[0]);
+            Vector3 ouut = (rotation * new Vector3(0, 0, 1));
+            return ouut;
+        }
     }
 
 
@@ -1012,12 +1057,7 @@ namespace OpenTk26_3
             base.Scale(scale);
             GetDimension();
         }
-        public Vector3 CarForward()
-        {
-            Matrix4 rotation = Matrix4.CreateRotationZ(-angle[2]) * Matrix4.CreateRotationY(-angle[1]) * Matrix4.CreateRotationX(-angle[0]);
-            Vector4 ouut = (rotation * new Vector4(new Vector3(0,0,1), 1));
-            return new Vector3(ouut);
-        }
+
     }
 
     public class Terrain
