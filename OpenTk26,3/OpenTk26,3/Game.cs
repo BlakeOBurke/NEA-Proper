@@ -345,16 +345,17 @@ namespace OpenTk26_3
 
             for (int i = 0; i < Kart.Cars.Count(); i++)
             {
-                tripleCollide(racetrack, Kart.Cars[i], out Vector2 raceAngle, out float tHeight);
-                tripleCollide(landscape, Kart.Cars[i], out Vector2 grassAngle, out float lHeight);
+                tripleCollide(racetrack, Kart.Cars[i]/*, out Vector2 raceAngle,*/ ,out float tHeight);
+                tripleCollide(landscape, Kart.Cars[i]/*, out Vector2 grassAngle,*/ ,out float lHeight);
                 //Collision(racetrack, Kart.Cars[i].centre, out float tHeight);
                 //Collision(landscape, Kart.Cars[i].centre, out float lHeight);
                 if (tHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y || lHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y)
                 {
                     Kart.Cars[i].centre.Y = (float)Math.Max(lHeight, tHeight) + Kart.Cars[i].dimensions.Y / 2f;
                 }
-                Kart.Cars[i].angle.X = grassAngle.X;
-                Kart.Cars[i].angle.Z = grassAngle.Y;
+                //Kart.Cars[i].angle.X = grassAngle.X;
+                //Kart.Cars[i].angle.Z = grassAngle.Y;
+                //Kart.Cars[i].angle.Y = (float)Math.Atan2(Kart.Cars[i].velocity.X, Kart.Cars[i].velocity.Z);
             }
 
 
@@ -435,6 +436,75 @@ namespace OpenTk26_3
 
             }
         }
+        public void drawObj2(List<Shape> a, Matrix4 proj)
+        {
+            for (int i = 0; i < a.Count(); i++)
+            {
+                Matrix4 model = CarMat(a[i]);
+
+                //GL.BindVertexArray(VertexArrayObject);
+
+                //starttime = time;
+
+                //GL.Uniform1(location:(proj), 1);
+                Matrix4 aproj = Matrix4.CreateScale(a[i].scale) * model * proj;
+
+                int uniID = GL.GetUniformLocation(3, "projection");
+
+
+                GL.UniformMatrix4(uniID, true, ref aproj);
+
+                //vertices = a[i].GetFloat();
+                //indices = a[i].triangle;
+
+
+                //GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
+                //GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
+
+
+                //GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+                //GL.EnableVertexAttribArray(0);
+
+
+                //GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+                //GL.EnableVertexAttribArray(1);
+
+
+
+                //GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
+                //GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
+
+                GL.BindVertexArray(a[i].VertexArrayObject);
+
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, a[i].VertexBufferObject);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, a[i].ElementBufferObject);
+
+
+                GL.VertexAttribPointer(a[i].VertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+                GL.EnableVertexAttribArray(a[i].VertexBufferObject);
+
+
+                GL.VertexAttribPointer(a[i].ElementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+                GL.EnableVertexAttribArray(a[i].ElementBufferObject);
+
+
+
+
+                shader.Use();
+
+
+
+                GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
+
+
+
+                //GL.EnableVertexAttribArray(a.VBO);
+
+
+
+            }
+        }
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -442,12 +512,15 @@ namespace OpenTk26_3
 
             List<Shape> models = new List<Shape>();
             models.AddRange(Shape.Models);
-            models.AddRange(Kart.Cars);
+            //models.AddRange(Kart.Cars);
             models.Add(landscape.terrain);
             models.Add(racetrack.terrain);
             //models.Add(water.terrain);
             //models.AddRange(A.pieces);
             drawObj(models, pro(player));
+            models = new List<Shape>();
+            models.AddRange(Kart.Cars);
+            drawObj2(models, pro(player));
             //drawTerrain(A, 1, pro(player));
 
 
@@ -516,6 +589,22 @@ namespace OpenTk26_3
             //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
             return mov;
         }
+        public static Matrix4 CarMat(Shape shapee)
+        {
+            Vector3 up = shapee.normal.Normalized();
+            Vector3 right = Vector3.Cross(up, shapee.getForward()).Normalized();
+            Vector3 forward = Vector3.Cross(up, right).Normalized();
+            Matrix4 mover = new Matrix4(
+                new Vector4(right,0),
+                new Vector4(up,0),
+                new Vector4(forward,0),
+                new Vector4(0,0,0,1)
+                );
+            Matrix4 mov = mover * Matrix4.CreateTranslation(shapee.centre);
+            //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
+            return mov;
+        }
+
         public static Matrix4 pro(camera cam)
         {
             Vector3 forw = cam.camforward();
@@ -629,42 +718,29 @@ namespace OpenTk26_3
             }
         }
 
-        public int tripleCollide(Terrain terrain, Shape Shape, out Vector2 angle, out float height)
+        public int tripleCollide(Terrain terrain, Shape Shape, out float height)
         {
             //wrapper function, collide 3 points on the car to find the angle of the terrain and make and average position
             //Shape.GetDimension();
-            Collision(terrain, Shape.centre + new Vector3(0, 0, Shape.dimensions.Z / 2), out float height1);
-            Collision(terrain, Shape.centre + new Vector3(-Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height2);
-            Collision(terrain, Shape.centre + new Vector3(+Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height3);
-            //Matrix3 rotation = Matrix3.CreateRotationZ(-Shape.angle[2]) * Matrix3.CreateRotationY(-Shape.angle[1]) * Matrix3.CreateRotationX(-Shape.angle[0]);
-            //Matrix3 rotation = Matrix3.CreateRotationY(-Shape.angle[1]);
-
-            ///////
-            //Collision(terrain, Shape.centre + Shape.getForward().Normalized() * (Shape.dimensions.Z / 2), out float height1);
-            //Collision(terrain, Shape.centre - Shape.getForward().Normalized() * (Shape.dimensions.Z / 2) + Vector3.Cross(Shape.getForward().Normalized(), new Vector3(0, 1, 0)) * (Shape.dimensions.X / 2), out float height2);
-            //Collision(terrain, Shape.centre - Shape.getForward().Normalized() * (Shape.dimensions.Z / 2) + Vector3.Cross(Shape.getForward().Normalized(), new Vector3(0, 1, 0)) * -(Shape.dimensions.X / 2), out float height3);
-
-
-
-            //Collision(terrain, Shape.centre + rotation * new Vector3(0, 0, Shape.dimensions.Z / 2), out float height1);
-            //Collision(terrain, Shape.centre + rotation * new Vector3(-Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height2);
-            //Collision(terrain, Shape.centre + rotation * new Vector3(+Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height3);
-
+            //Collision(terrain, Shape.centre + new Vector3(0, 0, Shape.dimensions.Z / 2), out float height1);
             //Collision(terrain, Shape.centre + new Vector3(-Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height2);
             //Collision(terrain, Shape.centre + new Vector3(+Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height3);
-            //Shape.getForward().Normalized() *
 
+            Collision2(terrain, Shape.centre, out float height1, out Vector3 normal);
+            //Vector3 outter = Vector3.Cross(Shape.getForward(), normal);
             // 1
             //2 3
+            height = height1;
 
-            height = (height1 + height2 + height3) / 3f;
+            Shape.normal = normal.Normalized();
+            ////height = (height1 + height2 + height3) / 3f;
             
-            angle = new Vector2(0,0);
+            ////angle = new Vector2(0,0);
             //pitch and roll only needed, yaw based on the movement
             //angle.X = (float)Math.Asin((- height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
             //angle.Y = (float)Math.Asin((height3-height2)/Shape.dimensions.X);            
-            angle.X = (float)Math.Asin((-height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
-            angle.Y = (float)Math.Asin((height3-height2)/Shape.dimensions.X);
+            ////angle.X = (float)Math.Asin((-height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
+            ////angle.Y = (float)Math.Asin((height3-height2)/Shape.dimensions.X);
             return 0;
 
         }
@@ -740,6 +816,80 @@ namespace OpenTk26_3
             return 0;
         }
 
+        public int Collision2(Terrain terrain, Vector3 B, out float Height, out Vector3 normal)
+        {
+            //return 0 if above the terrain
+            //1 if under the track
+            //2 if under the other terrain
+            //move up / slow down car accordingly
+
+            //matrix method for barycentric coordinates, formulas from wikipedia
+
+            //get square on grid for 
+
+            //square
+            //32
+            //10
+
+            //convert shape coordinates to one square on the terrain
+
+            //terrain has 
+            //Terrain.gridDimension
+            //^2 pieces
+            //centres at 0,0
+
+            //each terrain piece is 5 long or 10 of the 0.5 meters 
+            //add (gridDimension/2) to the shapes centre then divide by 5 and it will be in relative terrain world with each corner of a terrain piece being easily indedxable from the array 
+            //check if outside the range (0,0) to (gridDimension, gridDimension)
+
+            float X = B.X / Terrain.TileSize + (Terrain.gridDimension / 2);
+            float Z = B.Z / Terrain.TileSize + (Terrain.gridDimension / 2);
+
+            int X_ = (int)Math.Floor(X);
+            int Z_ = (int)Math.Floor(Z);
+
+            //terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].color = Color.Red;
+            //terrain.terrain.verts[(X_+1) * Terrain.gridDimension + Z_].color = Color.Red;
+            //terrain.terrain.verts[X_ * Terrain.gridDimension + Z_+1].color = Color.Red;
+            //terrain.terrain.verts[(X_+1) * Terrain.gridDimension + Z_+1].color = Color.Red;
+            ////terrain.terrain.resetBuffers();
+
+            if (X_ < 0 || Z_ < 0 || X_ > Terrain.gridDimension - 2 || Z_ > Terrain.gridDimension - 2)
+            {
+                Height = 0;
+                normal = new Vector3(0,0,0);
+                return -1;
+            }
+
+            //decide bottom right or top left triangle
+            //corners
+            Vector3[] c = new Vector3[3];
+            float[] barry = new float[3];
+            if (X < Z)
+            {
+                //bottom right
+                c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
+                c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
+                c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
+                barry = barycentric(terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
+                normal = Vector3.Cross(c[2] - c[0], c[1] - c[0]);
+            }
+            else
+            {
+                //top left
+                c[0] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
+                c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
+                c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
+                barry = barycentric(terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
+                normal = Vector3.Cross(c[1] - c[0], c[2] - c[0]);
+            }
+
+            Height = c[0].Y * barry[0] + c[1].Y * barry[1] + c[2].Y * barry[2];
+            Height *= Terrain.TileSize;
+            //Console.WriteLine(Height);
+            
+            return 0;
+        }
 
         public float[] barycentric(Vector3 A, Vector3 B, Vector3 C,Vector3 position)
         {
@@ -769,6 +919,7 @@ namespace OpenTk26_3
         public Vector3 scale = new Vector3(1, 1, 1);
         public Vector3 velocity;
         public Vector3 acceleration;
+        public Vector3 normal;
 
         public Vector3 centre;
         public Vector3 dimensions;
@@ -1046,7 +1197,7 @@ namespace OpenTk26_3
     public class Kart : Shape
     {
         public static List<Kart> Cars = new List<Kart>();
-        public Kart(Color color) : base("Kart.obj", color) { GetDimension(); }
+        public Kart(Color color) : base("Kart.obj", color) { GetDimension(); normal = new Vector3(0, 1, 0); }
         public override void Scale(float scale)
         {
             base.Scale(scale);
