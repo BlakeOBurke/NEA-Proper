@@ -43,11 +43,13 @@ namespace OpenTk26_3
         public static float camDistance = 20;
 
         public static float maxCarAcceleration = .25f;
-        public static float maxCarVelocity = 2.5f;
+        public static float maxCarVelocity = 2.0f;
 
         public const float tStep = 1 / 30f;
         public const float meter = 0.5f;
-        public const float Gravity = -9.81f;
+        public const float Gravity = -9.81f * 5;
+
+        public const float carScale = 1.0f;
 
         public static Game.camera player = new Game.camera(0, 0, 0);
 
@@ -226,11 +228,11 @@ namespace OpenTk26_3
 
             if (input.IsKeyDown(Key.Up))
             {
-                car.velocity += car.getForward() * maxCarAcceleration;
+                car.velocity -= car.getForward() * maxCarAcceleration;
             }
             else if (input.IsKeyDown(Key.Down))
             {
-                car.velocity -= car.getForward() * maxCarAcceleration;
+                car.velocity += car.getForward() * maxCarAcceleration;
             }
 
             if (input.IsKeyDown(Key.Right))
@@ -254,14 +256,49 @@ namespace OpenTk26_3
                 car.angle.Y += 0.02f;
             }
 
-            if (car.velocity.Length > maxCarVelocity)
+            
+        }
+        public void MoveCars()
+        {
+            for (int i = 0; i < Kart.Cars.Count(); i++)
             {
-                car.velocity = car.velocity.Normalized() * maxCarVelocity;
+                tripleCollide(racetrack, Kart.Cars[i]/*, out Vector2 raceAngle,*/ , out float tHeight);
+                tripleCollide(landscape, Kart.Cars[i]/*, out Vector2 grassAngle,*/ , out float lHeight);
+                //Collision(racetrack, Kart.Cars[i].centre, out float tHeight);
+                //Collision(landscape, Kart.Cars[i].centre, out float lHeight
+                Kart.Cars[i].centre.Y += Gravity * tStep;
+                if (tHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y || lHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y)
+                {
+                    Kart.Cars[i].centre.Y = (float)Math.Max(lHeight, tHeight) + Kart.Cars[i].dimensions.Y / 2f;
+                }
+                if(lHeight > tHeight)
+                {
+                    Kart.Cars[i].onGrass = true;
+                }
+                else
+                {
+                    Kart.Cars[i].onGrass = false;
+                }
+
+                Kart.Cars[i].velocity *= 0.95f;
+
+                float velocity_multi = 1f;
+                if (Kart.Cars[i].onGrass == true)
+                {
+                    velocity_multi = 0.35f;   
+                }
+                if (Kart.Cars[i].velocity.Length > maxCarVelocity*velocity_multi)
+                {
+                    Kart.Cars[i].velocity = Kart.Cars[i].velocity.Normalized() * maxCarVelocity * velocity_multi;
+                }
+                Console.WriteLine(Kart.Cars[i].velocity.Length);
+                Kart.Cars[i].SetPos(Kart.Cars[i].velocity);
+                //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
+
+                //Kart.Cars[i].angle.X = grassAngle.X;
+                //Kart.Cars[i].angle.Z = grassAngle.Y;
+                //Kart.Cars[i].angle.Y = (float)Math.Atan2(Kart.Cars[i].velocity.X, Kart.Cars[i].velocity.Z);
             }
-            car.velocity *= 0.95f;
-            Console.WriteLine(car.velocity.Length);
-            car.SetPos(car.velocity);
-            //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -282,7 +319,7 @@ namespace OpenTk26_3
             MOUSEX = 0; MOUSEY = 0;
 
             Kart.Cars.Add(new Kart(randomColor()));
-            Kart.Cars.Last().Scale(1.5f);
+            Kart.Cars.Last().Scale(carScale);
             Kart.Cars.Last().SetPos(new Vector3(0,40,0));
 
             landscape = new Terrain();
@@ -319,44 +356,14 @@ namespace OpenTk26_3
             if (input.IsKeyDown(Key.Space))
             {
                 Kart.Cars.Add(new Kart(randomColor()));
-                Kart.Cars.Last().Scale(3);
+                Kart.Cars.Last().Scale(carScale);
                 Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension*2,Terrain.gridDimension*2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension*2, Terrain.gridDimension * 2)));
             }
 
 
-            for (int i = 0; i < Shape.Models.Count(); i++)
-            {
-                Shape.Models[i].MakeMovement(new Vector3(0, 0, 0), new Vector3(0.1777f, 2 * 0.1777f, 0), 1);
-
-                Shape.Models[i].Move();
-            }
-
-            for (int i = 0; i < Kart.Cars.Count(); i++)
-            {
-                Kart.Cars[i].MakeMovement(new Vector3(0, Gravity, 0), new Vector3(0,0,0),1);
-
-                Kart.Cars[i].Move();
-            }
-
-
-
-
             DriveCar(Kart.Cars[0], input);
+            MoveCars();
 
-            for (int i = 0; i < Kart.Cars.Count(); i++)
-            {
-                tripleCollide(racetrack, Kart.Cars[i]/*, out Vector2 raceAngle,*/ ,out float tHeight);
-                tripleCollide(landscape, Kart.Cars[i]/*, out Vector2 grassAngle,*/ ,out float lHeight);
-                //Collision(racetrack, Kart.Cars[i].centre, out float tHeight);
-                //Collision(landscape, Kart.Cars[i].centre, out float lHeight);
-                if (tHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y || lHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y)
-                {
-                    Kart.Cars[i].centre.Y = (float)Math.Max(lHeight, tHeight) + Kart.Cars[i].dimensions.Y / 2f;
-                }
-                //Kart.Cars[i].angle.X = grassAngle.X;
-                //Kart.Cars[i].angle.Z = grassAngle.Y;
-                //Kart.Cars[i].angle.Y = (float)Math.Atan2(Kart.Cars[i].velocity.X, Kart.Cars[i].velocity.Z);
-            }
 
 
             if (input.IsKeyDown(Key.Y))
@@ -371,7 +378,7 @@ namespace OpenTk26_3
         {
             for (int i = 0; i < a.Count(); i++)
             {
-                Matrix4 model = modelMat(a[i]);
+                Matrix4 model = a[i].modelMat();
 
                 //GL.BindVertexArray(VertexArrayObject);
 
@@ -436,75 +443,7 @@ namespace OpenTk26_3
 
             }
         }
-        public void drawObj2(List<Shape> a, Matrix4 proj)
-        {
-            for (int i = 0; i < a.Count(); i++)
-            {
-                Matrix4 model = CarMat(a[i]);
-
-                //GL.BindVertexArray(VertexArrayObject);
-
-                //starttime = time;
-
-                //GL.Uniform1(location:(proj), 1);
-                Matrix4 aproj = Matrix4.CreateScale(a[i].scale) * model * proj;
-
-                int uniID = GL.GetUniformLocation(3, "projection");
-
-
-                GL.UniformMatrix4(uniID, true, ref aproj);
-
-                //vertices = a[i].GetFloat();
-                //indices = a[i].triangle;
-
-
-                //GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
-                //GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
-
-
-                //GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                //GL.EnableVertexAttribArray(0);
-
-
-                //GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                //GL.EnableVertexAttribArray(1);
-
-
-
-                //GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
-                //GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
-
-                GL.BindVertexArray(a[i].VertexArrayObject);
-
-
-                GL.BindBuffer(BufferTarget.ArrayBuffer, a[i].VertexBufferObject);
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, a[i].ElementBufferObject);
-
-
-                GL.VertexAttribPointer(a[i].VertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                GL.EnableVertexAttribArray(a[i].VertexBufferObject);
-
-
-                GL.VertexAttribPointer(a[i].ElementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                GL.EnableVertexAttribArray(a[i].ElementBufferObject);
-
-
-
-
-                shader.Use();
-
-
-
-                GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
-
-
-
-                //GL.EnableVertexAttribArray(a.VBO);
-
-
-
-            }
-        }
+        
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -517,10 +456,9 @@ namespace OpenTk26_3
             models.Add(racetrack.terrain);
             //models.Add(water.terrain);
             //models.AddRange(A.pieces);
-            drawObj(models, pro(player));
-            models = new List<Shape>();
             models.AddRange(Kart.Cars);
-            drawObj2(models, pro(player));
+
+            drawObj(models, pro(player));
             //drawTerrain(A, 1, pro(player));
 
 
@@ -583,27 +521,7 @@ namespace OpenTk26_3
                 return new Vector3(ouut);
             }
         }
-        public static Matrix4 modelMat(Shape shapee)
-        {
-            Matrix4 mov = Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateTranslation(shapee.centre);
-            //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
-            return mov;
-        }
-        public static Matrix4 CarMat(Shape shapee)
-        {
-            Vector3 up = shapee.normal.Normalized();
-            Vector3 right = Vector3.Cross(up, shapee.getForward()).Normalized();
-            Vector3 forward = Vector3.Cross(up, right).Normalized();
-            Matrix4 mover = new Matrix4(
-                new Vector4(right,0),
-                new Vector4(up,0),
-                new Vector4(forward,0),
-                new Vector4(0,0,0,1)
-                );
-            Matrix4 mov = mover * Matrix4.CreateTranslation(shapee.centre);
-            //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
-            return mov;
-        }
+
 
         public static Matrix4 pro(camera cam)
         {
@@ -927,7 +845,6 @@ namespace OpenTk26_3
         public static List<int> shapes = new List<int>();
         public static List<Shape> Models = new List<Shape>();
 
-        public List<Movement> Moves = new List<Movement>();
 
         public int VertexBufferObject;
         public int ElementBufferObject;
@@ -1147,41 +1064,14 @@ namespace OpenTk26_3
             return result;
         }
 
-        public void MakeMovement(Vector3 movement, Vector3 rotation, int times)
+        public virtual Matrix4 modelMat()
         {
-            Moves.Add(new Movement(movement, rotation, times));
+            Shape shapee = this;
+            Matrix4 mov = Matrix4.CreateRotationZ(this.angle[2]) * Matrix4.CreateRotationY(this.angle[1]) * Matrix4.CreateRotationX(this.angle[0]) * Matrix4.CreateTranslation(this.centre);
+            //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
+            return mov;
         }
-
-        public void Move()
-        {
-            for (int i = 0; i < Moves.Count; i++)
-            {
-                if (Moves[i].times == 0)
-                {
-                    Moves.RemoveAt(i);
-                    i--;
-                }
-                else
-                {
-                    Moves[i].times--;
-                    centre += Moves[i].movement * tStep;
-                    angle += Moves[i].rotation * tStep;
-                }
-            }
-        }
-
-        public class Movement
-        {
-            public Vector3 movement;
-            public Vector3 rotation;
-            public int times;
-            public Movement(Vector3 movement, Vector3 rotation, int times)
-            {
-                this.rotation = rotation;
-                this.movement = movement;
-                this.times = times;
-            }
-        }
+        
         public Vector3 getForward()
         {
             //Matrix4 rotation = Matrix4.CreateRotationZ(-angle[2]) * Matrix4.CreateRotationY(-angle[1]) * Matrix4.CreateRotationX(-angle[0]);
@@ -1196,6 +1086,7 @@ namespace OpenTk26_3
 
     public class Kart : Shape
     {
+        public bool onGrass = false;
         public static List<Kart> Cars = new List<Kart>();
         public Kart(Color color) : base("Kart.obj", color) { GetDimension(); normal = new Vector3(0, 1, 0); }
         public override void Scale(float scale)
@@ -1208,7 +1099,21 @@ namespace OpenTk26_3
             base.Scale(scale);
             GetDimension();
         }
-
+        public override Matrix4 modelMat()
+        {
+            Vector3 up = this.normal.Normalized();
+            Vector3 right = Vector3.Cross(up, this.getForward()).Normalized();
+            Vector3 forward = Vector3.Cross(up, right).Normalized();
+            Matrix4 mover = new Matrix4(
+                new Vector4(right, 0),
+                new Vector4(up, 0),
+                new Vector4(forward, 0),
+                new Vector4(0, 0, 0, 1)
+                );
+            Matrix4 mov = mover * Matrix4.CreateTranslation(this.centre);
+            //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
+            return mov;
+        }
     }
 
     public class Terrain
