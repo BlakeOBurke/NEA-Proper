@@ -20,8 +20,9 @@ namespace OpenTk26_3
     {
         static void Main(string[] args)
         {
-            Game ga = new Game(1200,900);
+            Game ga = new Game(1920,1080);
             ga.Run(30,30);
+            //ga.Run();
             Console.WriteLine("hi");
         }
 

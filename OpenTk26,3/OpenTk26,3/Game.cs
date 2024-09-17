@@ -30,6 +30,7 @@ namespace OpenTk26_3
 
     public class Game : GameWindow
     {
+
         public static Random rnd = new Random();
         static float[] vertices = { };
         static uint[] indices = { };
@@ -241,6 +242,7 @@ namespace OpenTk26_3
                 {
                     car.angle.Y -= 0.02f * car.velocity.Length;
                 }
+                car.velocity_multi = 0.8f;
             }
 
             else if (input.IsKeyDown(Key.Left))
@@ -249,6 +251,7 @@ namespace OpenTk26_3
                 {
                     car.angle.Y += 0.02f * car.velocity.Length;
                 }
+                car.velocity_multi = 0.8f;
             }
             if (input.IsKeyDown(Key.P))
             {
@@ -282,10 +285,10 @@ namespace OpenTk26_3
 
                 Kart.Cars[i].velocity *= 0.95f;
 
-                float velocity_multi = 1f;
+                float velocity_multi = Kart.Cars[i].velocity_multi;
                 if (Kart.Cars[i].onGrass == true)
                 {
-                    velocity_multi = 0.35f;   
+                    velocity_multi *= 0.35f;   
                 }
                 if (Kart.Cars[i].velocity.Length > maxCarVelocity*velocity_multi)
                 {
@@ -328,6 +331,9 @@ namespace OpenTk26_3
             landscape.terrain.SetPos(landscape.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
             racetrack.terrain.SetPos(racetrack.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
 
+            Vector2 pos = terrain2World(racetrack.startPos);
+            Kart.Cars.Last().SetPos(new Vector3(pos.X, 0, pos.Y));
+
             //landscape.terrain.SetPos(-landscape.terrain.avgPos());
             //racetrack.terrain.SetPos(-landscape.terrain.avgPos());
         }
@@ -347,9 +353,9 @@ namespace OpenTk26_3
                 Exit();
             }
 
-            //FreeCam(ref player, input);
-            //FreeMouse(ref player);
-            FreeFollowCam(ref player, Kart.Cars[0]);
+            FreeCam(ref player, input);
+            FreeMouse(ref player);
+            //FreeFollowCam(ref player, Kart.Cars[0]);
            
 
 
@@ -541,7 +547,7 @@ namespace OpenTk26_3
                 cam.zooooooom = 0.0001f;
             }
 
-            camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, 1.33333f, 0.1f, 20000f);
+            camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, 1.33333f, 2f, 1000f);
             return camer;
         }
         public class Shader
@@ -636,6 +642,13 @@ namespace OpenTk26_3
             }
         }
 
+        public static Vector2 terrain2World(Vector2 pos)
+        {
+            pos = pos * Terrain.squareSize; //+ new Vector2(128, 128);
+            Console.WriteLine(pos.X + "  " + pos.Y);
+
+            return pos;
+        }
         public int tripleCollide(Terrain terrain, Shape Shape, out float height)
         {
             //wrapper function, collide 3 points on the car to find the angle of the terrain and make and average position
@@ -689,8 +702,8 @@ namespace OpenTk26_3
             //add (gridDimension/2) to the shapes centre then divide by 5 and it will be in relative terrain world with each corner of a terrain piece being easily indedxable from the array 
             //check if outside the range (0,0) to (gridDimension, gridDimension)
 
-            float X = B.X / Terrain.TileSize + (Terrain.gridDimension / 2);
-            float Z = B.Z / Terrain.TileSize + (Terrain.gridDimension / 2);
+            float X = B.X / Terrain.squareSize + (Terrain.gridDimension / 2);
+            float Z = B.Z / Terrain.squareSize + (Terrain.gridDimension / 2);
 
             int X_ = (int)Math.Floor(X);
             int Z_ = (int)Math.Floor(Z);
@@ -729,7 +742,7 @@ namespace OpenTk26_3
             }
 
             Height = c[0].Y * barry[0] + c[1].Y * barry[1] + c[2].Y * barry[2];
-            Height *= Terrain.TileSize;
+            Height *= Terrain.squareSize;
             //Console.WriteLine(Height);
             return 0;
         }
@@ -760,8 +773,8 @@ namespace OpenTk26_3
             //add (gridDimension/2) to the shapes centre then divide by 5 and it will be in relative terrain world with each corner of a terrain piece being easily indedxable from the array 
             //check if outside the range (0,0) to (gridDimension, gridDimension)
 
-            float X = B.X / Terrain.TileSize + (Terrain.gridDimension / 2);
-            float Z = B.Z / Terrain.TileSize + (Terrain.gridDimension / 2);
+            float X = B.X / Terrain.squareSize + (Terrain.gridDimension / 2);
+            float Z = B.Z / Terrain.squareSize + (Terrain.gridDimension / 2);
 
             int X_ = (int)Math.Floor(X);
             int Z_ = (int)Math.Floor(Z);
@@ -803,7 +816,7 @@ namespace OpenTk26_3
             }
 
             Height = c[0].Y * barry[0] + c[1].Y * barry[1] + c[2].Y * barry[2];
-            Height *= Terrain.TileSize;
+            Height *= Terrain.squareSize;
             //Console.WriteLine(Height);
             
             return 0;
@@ -812,10 +825,10 @@ namespace OpenTk26_3
         public float[] barycentric(Vector3 A, Vector3 B, Vector3 C,Vector3 position)
         {
             //since the terrain is scaled, it needs to be resized
-            A *= Terrain.TileSize;
-            B *= Terrain.TileSize;
-            C *= Terrain.TileSize;
-            position += (Terrain.TileSize / 2f) * new Vector3(Terrain.gridDimension, 0, Terrain.gridDimension);
+            A *= Terrain.squareSize;
+            B *= Terrain.squareSize;
+            C *= Terrain.squareSize;
+            position += (Terrain.squareSize / 2f) * new Vector3(Terrain.gridDimension, 0, Terrain.gridDimension);
             float[] barycentrics = new float[3];
 
             float T = (A.X - C.X) * (B.Z-C.Z) - (A.Z-C.Z) * (B.X-C.X);
@@ -1086,6 +1099,7 @@ namespace OpenTk26_3
 
     public class Kart : Shape
     {
+        public float velocity_multi = 1f;
         public bool onGrass = false;
         public static List<Kart> Cars = new List<Kart>();
         public Kart(Color color) : base("Kart.obj", color) { GetDimension(); normal = new Vector3(0, 1, 0); }
@@ -1115,14 +1129,17 @@ namespace OpenTk26_3
             return mov;
         }
     }
+    
 
     public class Terrain
     {
         public Shape terrain;
         public static int gridDimension = 128;
         public static int HeightMulti = 10;
-        public static int TileSize = 5;
+        public static int squareSize = 5;
         float[,] heights = new float[gridDimension, gridDimension];
+        public Vector2 startPos;
+        public Vector2 checkpointPos;
 
         string path = "128_good.obj";
         public Terrain()
@@ -1140,7 +1157,7 @@ namespace OpenTk26_3
             Console.WriteLine(temporary.Max());
 
             terrain = new Shape(path, Color.Green);
-            terrain.Scale(TileSize);
+            terrain.Scale(squareSize);
             for (int i = 0; i < heights.GetLength(0); i++)
             {
                 for (int j = 0; j < heights.GetLength(1); j++)
@@ -1149,7 +1166,7 @@ namespace OpenTk26_3
 
                     Color col = terrain.verts[gridDimension * i + j].color;
                     terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(heights[i, j] / Math.Sqrt(2) * 255), 255)) / 2, col.B);
-                    Console.WriteLine(terrain.verts[gridDimension *i + j].pos.X);
+                    //Console.WriteLine(terrain.verts[gridDimension *i + j].pos.X);
                 }
             }
 
@@ -1170,7 +1187,7 @@ namespace OpenTk26_3
             Console.WriteLine(temporary.Max());
 
             terrain = new Shape(path, Color.Black);
-            terrain.Scale(TileSize);
+            terrain.Scale(squareSize);
 
             for (int i = 0; i < heights.GetLength(0); i++)
             {
@@ -1185,8 +1202,11 @@ namespace OpenTk26_3
             }
 
             Tile[,] track = new Tile[8, 8];
-            Tile.GenerateTrack(ref track);
-
+            Vector2 StartTile = new Vector2(0, 0);
+            Vector2 CheckTile = new Vector2(0, 0);
+            Tile.GenerateTrack(ref track, ref StartTile, ref CheckTile);
+            startPos = new Vector2((StartTile.X - 4 + .5f) * 16, (StartTile.Y - 4 + .5f) * 16);
+            checkpointPos = new Vector2((CheckTile.X - 4 + .5f) * 16, (CheckTile.Y - 4 + .5f) * 16);
             int trackMin = 3;
             int trackMax = 12;
             int trackGrid = 16;
@@ -1239,13 +1259,20 @@ namespace OpenTk26_3
 
                     if (a)
                     {
-                        terrain.verts[gridDimension * i + j].pos.Y += .2f;
+                        terrain.verts[gridDimension * i + j].pos.Y += .5f;
                     }
                     else
                     {
                         terrain.verts[gridDimension * i + j].pos.Y -= 2f;
                     }
+                    //colours the start tile differently
+                    if (new Vector2(x,y) == StartTile || new Vector2(x,y) == CheckTile)
+                    {
+                        Color temporaryColor = terrain.verts[gridDimension * i + j].color;
+                        terrain.verts[gridDimension * i + j].color = Color.FromArgb(255,Math.Min(255,temporaryColor.R+50), Math.Max(0, temporaryColor.G - 50), Math.Min(255, temporaryColor.B+50));
+                    }
                 }
+
                 terrain.resetBuffers();
             }
 
@@ -1478,7 +1505,7 @@ namespace OpenTk26_3
                 }
             }
 
-            public static void GenerateTrack(ref Tile[,] track)
+            public static void GenerateTrack(ref Tile[,] track, ref Vector2 startPosition, ref Vector2 CheckpointPosition)
             {
 
                 do
@@ -1489,6 +1516,8 @@ namespace OpenTk26_3
 
                     int z = rand.Next(1, track.GetLength(1) - 2);
                     int w = rand.Next(2, track.GetLength(0) - 4);
+                    startPosition = new Vector2(z, w);
+                    //Console.WriteLine(startPos.X + "  " + startPos.Y);
                     track[w, z] = new Tile("|");
                     track[w, z].Up = " ";
                     track[w, z].Down = " ";
@@ -1557,6 +1586,8 @@ namespace OpenTk26_3
 
 
                 } while (trackValid(ref track) == false);
+                CheckpointPosition = GetCheckpoint(track, startPosition);
+
 
                 //do regular track stuff to models in 3d
             }
@@ -1591,6 +1622,110 @@ namespace OpenTk26_3
                     return false;
                 }
                 return true;
+            }
+            static Vector2 GetCheckpoint(Tile[,] track, Vector2 startPosition)
+            {
+                //returns the coordinates of a checkpoint tile, ~1/2 way along the track
+                int tracklength = 0;
+                for (int i = 0; i < track.GetLength(0); i++)
+                {
+                    for (int j = 0; j < track.GetLength(1); j++)
+                    {
+                        if ("|-7FLJ".Contains(track[i, j].name))
+                        {
+                            tracklength++;
+                        }
+                    }
+                }
+
+                tracklength /= 2;
+                int x, y;
+                x = (int)startPosition.X;
+                y = (int)startPosition.Y;
+                string direction = "u";
+                while (tracklength > 0)
+                {
+                    //gonna traverse the track to find the place halfway along
+                    
+                    switch (track[y, x].name)
+                    {
+                        case "|":
+                            if (direction == "u")
+                            {
+                                y += 1;
+                            }
+                            else
+                            {
+                                y-=1;
+                            }
+                            break;
+                        case "-":
+                            if (direction == "l")
+                            {
+                                x -= 1;
+                            }
+                            else
+                            {
+                                x += 1;
+                            }
+                            break;
+                        case "7":
+                            if(direction == "u")
+                            {
+                                direction = "l";
+                                x -= 1;
+                            }
+                            else
+                            {
+                                y -= 1;
+                                direction = "d";
+                            }
+                            break;
+                        case "F":
+                            if(direction == "u")
+                            {
+                                direction = "r";
+                                x += 1;
+                            }
+                            else
+                            {
+                                direction = "d";
+                                y -= 1;
+                            }
+                            break;
+                        case "L":
+                            if(direction == "l")
+                            {
+                                direction = "u";
+                                y += 1;
+                            }
+                            else
+                            {
+                                direction = "r";
+                                x += 1;
+                            }
+                            break;
+                        case "J":
+                            if(direction == "r")
+                            {
+                                direction = "u";
+                                y += 1;
+                            }
+                            else
+                            {
+                                direction = "l";
+                                x -= 1;
+                            }
+                            break;
+
+                         
+
+                    }
+                    tracklength -= 1;
+                }
+
+                return new Vector2(x, y);
+
             }
         }
         public class Perlin
