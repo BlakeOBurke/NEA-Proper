@@ -1625,6 +1625,8 @@ namespace OpenTk26_3
             }
             static Vector2 GetCheckpoint(Tile[,] track, Vector2 startPosition)
             {
+                //needs fixing BADLY
+
                 //returns the coordinates of a checkpoint tile, ~1/2 way along the track
                 int tracklength = 0;
                 for (int i = 0; i < track.GetLength(0); i++)
@@ -1724,7 +1726,7 @@ namespace OpenTk26_3
                     tracklength -= 1;
                 }
 
-                return new Vector2(x, y);
+                return new Vector2(y, x);
 
             }
         }
