@@ -294,7 +294,7 @@ namespace OpenTk26_3
                 {
                     Kart.Cars[i].velocity = Kart.Cars[i].velocity.Normalized() * maxCarVelocity * velocity_multi;
                 }
-                Console.WriteLine(Kart.Cars[i].velocity.Length);
+                //Console.WriteLine(Kart.Cars[i].velocity.Length);
                 Kart.Cars[i].SetPos(Kart.Cars[i].velocity);
                 //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
 
@@ -1641,9 +1641,10 @@ namespace OpenTk26_3
                 }
 
                 tracklength /= 2;
+                Console.WriteLine(tracklength);
                 int x, y;
-                x = (int)startPosition.X;
                 y = (int)startPosition.Y;
+                x = (int)startPosition.X;
                 string direction = "u";
                 while (tracklength > 0)
                 {
@@ -1652,39 +1653,39 @@ namespace OpenTk26_3
                     switch (track[y, x].name)
                     {
                         case "|":
-                            if (direction == "u")
+                            if(direction == "u")
                             {
                                 y += 1;
                             }
                             else
                             {
-                                y-=1;
+                                y -= 1;
                             }
                             break;
                         case "-":
-                            if (direction == "l")
-                            {
-                                x -= 1;
-                            }
-                            else
+                            if(direction == "r")
                             {
                                 x += 1;
                             }
+                            else
+                            {
+                                x -= 1;
+                            }
                             break;
-                        case "7":
-                            if(direction == "u")
+                        case "J":
+                            if(direction == "d")
                             {
                                 direction = "l";
                                 x -= 1;
                             }
                             else
                             {
-                                y -= 1;
-                                direction = "d";
+                                direction = "u";
+                                y += 1;
                             }
                             break;
                         case "F":
-                            if(direction == "u")
+                            if (direction == "u")
                             {
                                 direction = "r";
                                 x += 1;
@@ -1696,32 +1697,29 @@ namespace OpenTk26_3
                             }
                             break;
                         case "L":
-                            if(direction == "l")
-                            {
-                                direction = "u";
-                                y += 1;
-                            }
-                            else
+                            if(direction == "d")
                             {
                                 direction = "r";
                                 x += 1;
                             }
-                            break;
-                        case "J":
-                            if(direction == "r")
+                            else
                             {
                                 direction = "u";
                                 y += 1;
                             }
-                            else
+                            break;
+                        case "7":
+                            if (direction == "u")
                             {
                                 direction = "l";
                                 x -= 1;
                             }
+                            else
+                            {
+                                direction = "d";
+                                y -= 1;
+                            }
                             break;
-
-                         
-
                     }
                     tracklength -= 1;
                 }
