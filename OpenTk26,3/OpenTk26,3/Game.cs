@@ -353,9 +353,9 @@ namespace OpenTk26_3
                 Exit();
             }
 
-            FreeCam(ref player, input);
-            FreeMouse(ref player);
-            //FreeFollowCam(ref player, Kart.Cars[0]);
+            //FreeCam(ref player, input);
+            //FreeMouse(ref player);
+            FreeFollowCam(ref player, Kart.Cars[0]);
            
 
 
@@ -1259,7 +1259,7 @@ namespace OpenTk26_3
 
                     if (a)
                     {
-                        terrain.verts[gridDimension * i + j].pos.Y += .5f;
+                        terrain.verts[gridDimension * i + j].pos.Y += .1f;
                     }
                     else
                     {
@@ -1623,6 +1623,17 @@ namespace OpenTk26_3
                 }
                 return true;
             }
+            static void displa(Tile[,] track)
+            {
+                for (int i = 0;i < track.GetLength(0); i++)
+                {
+                    for (int j = 0;j < track.GetLength(1); j++)
+                    {
+                        Console.Write(track[i, j].name == "Air" ? " " : track[i,j].name);
+                    }
+                    Console.WriteLine();
+                }
+            }
             static Vector2 GetCheckpoint(Tile[,] track, Vector2 startPosition)
             {
                 //needs fixing BADLY
@@ -1640,32 +1651,56 @@ namespace OpenTk26_3
                     }
                 }
 
-                tracklength /= 2;
+                //tracklength/=2;
+                displa(track);
                 Console.WriteLine(tracklength);
                 int x, y;
                 y = (int)startPosition.Y;
                 x = (int)startPosition.X;
-                string direction = "u";
+                bool[,] discoverred = new bool[8, 8];
+                List<Tile> tiles = new List<Tile>();
                 while (tracklength > 0)
                 {
                     //gonna traverse the track to find the place halfway along
-                    
+
+                    tiles.Add(track[y, x]);
+                    discoverred[y,x] = true;
                     switch (track[y, x].name)
                     {
                         case "|":
-                            if(direction == "u")
-                            {
-                                y += 1;
-                            }
-                            else
+                            if ("F|7".Contains(track[y - 1, x].name) && discoverred[y-1,x] == false)
                             {
                                 y -= 1;
                             }
+                            else
+                            {
+                                y += 1;
+                            }
                             break;
                         case "-":
-                            if(direction == "r")
+                            if ("L-F".Contains(track[y, x - 1].name) && discoverred[y,x-1] == false)
+                            {
+                                x -= 1;
+                            }
+                            else
                             {
                                 x += 1;
+                            }
+                            break;
+                        case "L":
+                            if ("|F7".Contains(track[y-1,x].name) && discoverred[y-1,x] == false)
+                            {
+                                y -= 1;
+                            }
+                            else
+                            {
+                                x += 1;
+                            }
+                            break;
+                        case "7":
+                            if ("|JL".Contains(track[y+1,x].name) && discoverred[y+1,x] == false)
+                            {
+                                y += 1;
                             }
                             else
                             {
@@ -1673,56 +1708,36 @@ namespace OpenTk26_3
                             }
                             break;
                         case "J":
-                            if(direction == "d")
+                            if ("|7F".Contains(track[y-1,x].name) && discoverred[y-1,x] == false)
                             {
-                                direction = "l";
-                                x -= 1;
+                                y -= 1;
                             }
                             else
                             {
-                                direction = "u";
-                                y += 1;
+                                x -= 1;
                             }
                             break;
                         case "F":
-                            if (direction == "u")
+                            if ("|JL".Contains(track[y + 1, x].name) && discoverred[y + 1, x] == false)
                             {
-                                direction = "r";
-                                x += 1;
-                            }
-                            else
-                            {
-                                direction = "d";
-                                y -= 1;
-                            }
-                            break;
-                        case "L":
-                            if(direction == "d")
-                            {
-                                direction = "r";
-                                x += 1;
-                            }
-                            else
-                            {
-                                direction = "u";
                                 y += 1;
                             }
-                            break;
-                        case "7":
-                            if (direction == "u")
-                            {
-                                direction = "l";
-                                x -= 1;
-                            }
                             else
                             {
-                                direction = "d";
-                                y -= 1;
+                                x += 1;
                             }
                             break;
                     }
+                   
                     tracklength -= 1;
                 }
+                for (int i = 0; i < tiles.Count(); i++)
+                {
+                    Console.WriteLine(tiles[i].name);
+                }
+
+                x = tiles[tiles.Count / 2 ].x;
+                y = tiles[tiles.Count / 2 ].y;
 
                 return new Vector2(y, x);
 
