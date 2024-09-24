@@ -200,6 +200,7 @@ namespace OpenTk26_3
 
         }
 
+
         public static void FreeFollowCam(ref camera cam, Kart car)
         {
             //cam.pos = car.centre;
@@ -222,6 +223,34 @@ namespace OpenTk26_3
             }
             cam.pos = car.centre - cam.camforward() * camDistance;
         }
+        public static void StrictFollowCam(ref camera cam, Kart car)
+        {
+            //cam.pos = car.centre;
+
+
+            //MouseState moose = Mouse.GetState();
+            //cam.direction[1] -= (moose.X - MOUSEX) * 0.001f;
+            //MOUSEX = moose.X;
+
+            //cam.direction[0] += (moose.Y - MOUSEY) * 0.001f;
+            //MOUSEY = moose.Y;
+
+            //if (cam.direction[0] > Math.PI / 2 - 0.05f)
+            //{
+            //    cam.direction[0] = (float)Math.PI / 2 - 0.05f;
+            //}
+            //else if (cam.direction[0] < -Math.PI / 2 + 0.05f)
+            //{
+            //    cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
+            //}
+
+            cam.direction = new Vector3(car.getForward().Y,car.getForward().X,0);
+
+
+            cam.pos = car.centre - cam.camforward() * camDistance;
+
+        }
+
 
         public static void DriveCar(Kart car, KeyboardState input)
         {
@@ -325,6 +354,10 @@ namespace OpenTk26_3
             Kart.Cars.Last().Scale(carScale);
             Kart.Cars.Last().SetPos(new Vector3(0,40,0));
 
+
+            //starts the random seed for the terrain stuff, user will be promted to enter one
+            Terrain.getRan();
+
             landscape = new Terrain();
             racetrack = new Terrain("circle");
 
@@ -355,8 +388,8 @@ namespace OpenTk26_3
 
             //FreeCam(ref player, input);
             //FreeMouse(ref player);
-            FreeFollowCam(ref player, Kart.Cars[0]);
-           
+            //FreeFollowCam(ref player, Kart.Cars[0]);
+            StrictFollowCam(ref player, Kart.Cars[0]);
 
 
             if (input.IsKeyDown(Key.Space))
@@ -374,7 +407,16 @@ namespace OpenTk26_3
 
             if (input.IsKeyDown(Key.Y))
             {
+                Terrain.getRan();
+
+                landscape = new Terrain();
                 racetrack = new Terrain("circle");
+
+                landscape.terrain.SetPos(landscape.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
+                racetrack.terrain.SetPos(racetrack.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
+
+                Vector2 pos = terrain2World(racetrack.startPos);
+                Kart.Cars.Last().SetPos(new Vector3(pos.X, 0, pos.Y));
             }
         }
 
@@ -547,7 +589,7 @@ namespace OpenTk26_3
                 cam.zooooooom = 0.0001f;
             }
 
-            camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, 1.33333f, 2f, 1000f);
+            camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, 1.33333f, 2.5f, 1000f);
             return camer;
         }
         public class Shader
@@ -1133,18 +1175,32 @@ namespace OpenTk26_3
 
     public class Terrain
     {
+
+        public static Random rand;
+
         public Shape terrain;
         public static int gridDimension = 128;
-        public static int HeightMulti = 10;
+        public static int HeightMulti = 5;
         public static int squareSize = 5;
         float[,] heights = new float[gridDimension, gridDimension];
         public Vector2 startPos;
         public Vector2 checkpointPos;
+        public static Vector2 offset;
+
+        public static void getRan()
+        {
+            int raaaa = rnd.Next();
+            Console.WriteLine(raaaa);
+            rand = new Random(raaaa);
+            offset = new Vector2(rand.Next(0,1000), rand.Next(0,1000));
+        }
+
 
         string path = "128_good.obj";
         public Terrain()
         {
-            heights = Perlin.DoPerlin(heights, 0, 0);
+            
+            heights = Perlin.DoPerlin(heights, offset.X, offset.Y);
             List<float> temporary = new List<float>();
             for (int i = 0; i < heights.GetLength(0); i++)
             {
@@ -1174,7 +1230,7 @@ namespace OpenTk26_3
         }
         public Terrain(string shape)
         {
-            heights = Perlin.DoPerlin(heights, 0, 0);
+            heights = Perlin.DoPerlin(heights, offset.X, offset.Y);
             List<float> temporary = new List<float>();
             for (int i = 0; i < heights.GetLength(0); i++)
             {
@@ -1508,11 +1564,12 @@ namespace OpenTk26_3
             public static void GenerateTrack(ref Tile[,] track, ref Vector2 startPosition, ref Vector2 CheckpointPosition)
             {
 
+
                 do
                 {
                     TrackOutline(ref track);
 
-                    Random rand = new Random();
+                    
 
                     int z = rand.Next(1, track.GetLength(1) - 2);
                     int w = rand.Next(2, track.GetLength(0) - 4);
@@ -1613,11 +1670,11 @@ namespace OpenTk26_3
                         }
                     }
                 }
-                if (cornerCount < 7)
+                if (cornerCount < 9)
                 {
                     return false;
                 }
-                else if (tracklength < 11)
+                else if (tracklength < 17)
                 {
                     return false;
                 }
@@ -1739,7 +1796,7 @@ namespace OpenTk26_3
                 x = tiles[tiles.Count / 2 ].x;
                 y = tiles[tiles.Count / 2 ].y;
 
-                return new Vector2(y, x);
+                return new Vector2(x, y);
 
             }
         }
