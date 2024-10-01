@@ -23,6 +23,7 @@ using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
 using System.Data.OleDb;
+using System.Runtime;
 
 namespace OpenTk26_3
 {
@@ -38,10 +39,10 @@ namespace OpenTk26_3
         public int ElementBufferObject;
         public int VertexArrayObject;
         public static int MOUSEX, MOUSEY;
+        public static int MOUSEscroll = 0;
         public static bool quickMov = false;
 
-        //distance from car to camera in follow modes
-        public static float camDistance = 20;
+
 
         public static float maxCarAcceleration = .25f;
         public static float maxCarVelocity = 2.0f;
@@ -51,6 +52,8 @@ namespace OpenTk26_3
         public const float Gravity = -9.81f * 5;
 
         public const float carScale = 1.0f;
+
+        public static bool bigger = false;
 
         public static Game.camera player = new Game.camera(0, 0, 0);
 
@@ -221,44 +224,29 @@ namespace OpenTk26_3
             {
                 cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
             }
-            cam.pos = car.centre - cam.camforward() * camDistance;
+            cam.pos = car.centre - cam.camforward() * cam.camDistance;
         }
         public static void StrictFollowCam(ref camera cam, Kart car)
         {
             MouseState moose = Mouse.GetState();
-            Vector3 cameraFovCheck = new Vector3();
-            cameraFovCheck[1] -= (moose.X - MOUSEX) * 0.001f;
+            cam.Ddirection[1] -= (moose.X - MOUSEX) * 0.001f;
             MOUSEX = moose.X;
 
-            cameraFovCheck[0] += (moose.Y - MOUSEY) * 0.001f;
+            cam.Ddirection[0] += (moose.Y - MOUSEY) * 0.001f;
             MOUSEY = moose.Y;
 
-            //cos theta  =  dot product / length
-            //normalised so costheta = dotproduct/ length
-            //60 degree fov (each side)
-            //dotproduct   -1/2<0<1/2
+            //cam.direction.Y = (float)Math.Atan2(car.getForward().X, car.getForward().Z);
+            Console.WriteLine(moose.ScrollWheelValue);
+            Console.WriteLine(MOUSEscroll);
 
-            if (cameraFovCheck[0] > Math.PI / 2 - 0.05f)
-            {
-                cameraFovCheck[0] = (float)Math.PI / 2 - 0.05f;
-            }
-            else if (cameraFovCheck[0] < -Math.PI / 2 + 0.05f)
-            {
-                cameraFovCheck[0] = (float)-Math.PI / 2 + 0.05f;
-            }
+            cam.camDistance -= (moose.ScrollWheelValue + MOUSEscroll);
+            MOUSEscroll = -moose.ScrollWheelValue;
+            if (cam.camDistance > 25) { cam.camDistance = 25; }
+            if(cam.camDistance < 5) { cam.camDistance = 5; }
 
-            if(moose.RightButton == ButtonState.Pressed)
-            {
-                cam.direction += cameraFovCheck;
-            }
-            else
-            {
-                cam.direction.Y = (float)Math.Atan2(car.getForward().X, car.getForward().Z);
-            }
+            cam.direction = new Vector3(cam.Ddirection.X, cam.Ddirection.Y + (float)Math.Atan2(car.getForward().X, car.getForward().Z), 0f);
 
-            cam.pos = car.centre - cam.camforward() * camDistance;
-
-
+            cam.pos = car.centre - cam.camforward() * cam.camDistance *(car.scale.Length/3f) /**(1f+car.velocity.Length/4)*/;
 
         }
 
@@ -282,7 +270,7 @@ namespace OpenTk26_3
                 {
                     car.angle.Y -= 0.02f * car.velocity.Length;
                 }
-                car.velocity_multi = 0.8f;
+                car.velocity_multi *= 0.8f;
             }
 
             else if (input.IsKeyDown(Key.Left))
@@ -291,7 +279,7 @@ namespace OpenTk26_3
                 {
                     car.angle.Y += 0.02f * car.velocity.Length;
                 }
-                car.velocity_multi = 0.8f;
+                car.velocity_multi *= 0.8f;
             }
             if (input.IsKeyDown(Key.P))
             {
@@ -326,7 +314,7 @@ namespace OpenTk26_3
                 Kart.Cars[i].velocity *= 0.95f;
 
                 float velocity_multi = Kart.Cars[i].velocity_multi;
-                if (Kart.Cars[i].onGrass == true)
+                if (Kart.Cars[i].onGrass == true && !bigger)
                 {
                     velocity_multi *= 0.35f;   
                 }
@@ -399,8 +387,7 @@ namespace OpenTk26_3
 
             //FreeCam(ref player, input);
             //FreeMouse(ref player);
-            FreeFollowCam(ref player, Kart.Cars[0]);
-            //StrictFollowCam(ref player, Kart.Cars[0]);
+            //FreeFollowCam(ref player, Kart.Cars[0]);
 
 
             if (input.IsKeyDown(Key.Space))
@@ -410,9 +397,33 @@ namespace OpenTk26_3
                 Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension*2,Terrain.gridDimension*2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension*2, Terrain.gridDimension * 2)));
             }
 
+            if (input.IsKeyDown(Key.ShiftLeft))
+            {
+                Kart.Cars[0].velocity_multi = 2f;
+            }
+            else
+            {
+                Kart.Cars[0].velocity_multi = 1f;
+            }
+            if (input.IsKeyDown(Key.ControlLeft))
+            {
+                if (!bigger)
+                {
+
+                    Kart.Cars[0].Scale(5);
+                }
+                bigger = true;
+            }
+            else if(bigger)
+            {
+                Kart.Cars[0].Scale(0.2f);
+                bigger = false;
+            }
+
 
             DriveCar(Kart.Cars[0], input);
             MoveCars();
+            StrictFollowCam(ref player, Kart.Cars[0]);
 
 
 
@@ -558,9 +569,12 @@ namespace OpenTk26_3
 
         }
         public class camera
-        {
+        {        
+            //distance from car to camera in follow modes
+            public float camDistance = 20;
             public Vector3 pos;
             public Vector3 direction;
+            public Vector2 Ddirection;
             public Vector3 forward;
             public float dx, dy, dz;
             public float zooooooom;
@@ -568,9 +582,11 @@ namespace OpenTk26_3
             {
                 this.pos = new Vector3(x, y, z);
                 this.direction = new Vector3(0, 0, 0);
+                this.Ddirection = new Vector2(0, (float)Math.PI);
                 dx = 0; dy = 0; dz = 1;
                 this.zooooooom = (float)(0.0174533 * 60);
                 forward = new Vector3(0, 0, 1);
+                camDistance = 20f;
             }
 
             public Vector3 camforward()
@@ -852,20 +868,37 @@ namespace OpenTk26_3
             if (X < Z)
             {
                 //bottom right
+                //c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
+                //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
+                //c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
+
                 c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
-                c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
-                c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
-                barry = barycentric(terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
-                normal = Vector3.Cross(c[2] - c[0], c[1] - c[0]);
+                c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + (Z_ + 1)].pos;
+                c[1] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
+
+                //c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
+                //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
+                //c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
+                //barry = barycentric(terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
+                barry = barycentric(c[0], c[1], c[2], B); 
+                normal = -Vector3.Cross(c[2] - c[0], c[1] - c[0]);
             }
             else
             {
                 //top left
-                c[0] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
+                //c[0] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
+                //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
+                //c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
+                c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
                 c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
-                c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
-                barry = barycentric(terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
-                normal = Vector3.Cross(c[1] - c[0], c[2] - c[0]);
+                c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
+
+
+
+                
+                //barry = barycentric(terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
+                barry = barycentric(c[0], c[1], c[2], B); 
+                normal = -Vector3.Cross(c[1] - c[0], c[2] - c[0]);
             }
 
             Height = c[0].Y * barry[0] + c[1].Y * barry[1] + c[2].Y * barry[2];
