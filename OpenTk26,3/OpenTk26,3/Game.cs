@@ -225,29 +225,40 @@ namespace OpenTk26_3
         }
         public static void StrictFollowCam(ref camera cam, Kart car)
         {
-            //cam.pos = car.centre;
+            MouseState moose = Mouse.GetState();
+            Vector3 cameraFovCheck = new Vector3();
+            cameraFovCheck[1] -= (moose.X - MOUSEX) * 0.001f;
+            MOUSEX = moose.X;
 
+            cameraFovCheck[0] += (moose.Y - MOUSEY) * 0.001f;
+            MOUSEY = moose.Y;
 
-            //MouseState moose = Mouse.GetState();
-            //cam.direction[1] -= (moose.X - MOUSEX) * 0.001f;
-            //MOUSEX = moose.X;
+            //cos theta  =  dot product / length
+            //normalised so costheta = dotproduct/ length
+            //60 degree fov (each side)
+            //dotproduct   -1/2<0<1/2
 
-            //cam.direction[0] += (moose.Y - MOUSEY) * 0.001f;
-            //MOUSEY = moose.Y;
+            if (cameraFovCheck[0] > Math.PI / 2 - 0.05f)
+            {
+                cameraFovCheck[0] = (float)Math.PI / 2 - 0.05f;
+            }
+            else if (cameraFovCheck[0] < -Math.PI / 2 + 0.05f)
+            {
+                cameraFovCheck[0] = (float)-Math.PI / 2 + 0.05f;
+            }
 
-            //if (cam.direction[0] > Math.PI / 2 - 0.05f)
-            //{
-            //    cam.direction[0] = (float)Math.PI / 2 - 0.05f;
-            //}
-            //else if (cam.direction[0] < -Math.PI / 2 + 0.05f)
-            //{
-            //    cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
-            //}
-
-            cam.direction = new Vector3(car.getForward().Y,car.getForward().X,0);
-
+            if(moose.RightButton == ButtonState.Pressed)
+            {
+                cam.direction += cameraFovCheck;
+            }
+            else
+            {
+                cam.direction.Y = (float)Math.Atan2(car.getForward().X, car.getForward().Z);
+            }
 
             cam.pos = car.centre - cam.camforward() * camDistance;
+
+
 
         }
 
@@ -388,8 +399,8 @@ namespace OpenTk26_3
 
             //FreeCam(ref player, input);
             //FreeMouse(ref player);
-            //FreeFollowCam(ref player, Kart.Cars[0]);
-            StrictFollowCam(ref player, Kart.Cars[0]);
+            FreeFollowCam(ref player, Kart.Cars[0]);
+            //StrictFollowCam(ref player, Kart.Cars[0]);
 
 
             if (input.IsKeyDown(Key.Space))
