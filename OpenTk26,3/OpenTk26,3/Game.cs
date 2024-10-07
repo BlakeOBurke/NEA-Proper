@@ -53,7 +53,6 @@ namespace OpenTk26_3
 
         public const float carScale = 1.0f;
 
-        public static bool bigger = false;
 
         public static Game.camera player = new Game.camera(0, 0, 0);
 
@@ -268,18 +267,22 @@ namespace OpenTk26_3
             {
                 if (car.velocity.Length > .5f)
                 {
-                    car.angle.Y -= 0.02f * car.velocity.Length * tStep;
+                    car.angle.Y -= car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep *1.5f : 0.02f * car.velocity.Length * tStep;
                 }
-                car.velocity_multi *= 0.85f;
+                car.velocity_multi = 0.85f;
             }
 
             else if (input.IsKeyDown(Key.Left) || input.IsKeyDown(Key.A))
             {
                 if (car.velocity.Length > .5f)
                 {
-                    car.angle.Y += 0.02f * car.velocity.Length * tStep;
+                    car.angle.Y += car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
                 }
-                car.velocity_multi *= 0.85f;
+                car.velocity_multi = 0.85f;
+            }
+            else
+            {
+                car.velocity_multi = 1;
             }
             //if (input.IsKeyDown(Key.P))
             //{
@@ -315,7 +318,7 @@ namespace OpenTk26_3
 
                 float velocity_multi = Kart.Cars[i].velocity_multi;
 
-                if (Kart.Cars[i].onGrass == true && !bigger && Kart.Cars[i].boost <= 0)
+                if (Kart.Cars[i].onGrass == true && Kart.Cars[i].big <= 0 && (Kart.Cars[i].boost <= 0 || Kart.Cars[i].boostDirection == -1))
                 {
                     velocity_multi *= 0.35f;   
                 }
@@ -323,13 +326,23 @@ namespace OpenTk26_3
 
                 if (Kart.Cars[i].boost > 0)
                 {
+                    if (Kart.Cars[i].boostDirection == 1)
+                    {
+                        velocity_multi *= 2;
+                        player.ZoomFast();
+                    }
+                    else
+                    {
+                        velocity_multi *= 0.65f;
+                        player.ZoomSlow();
+                    }
+
                     Kart.Cars[i].boost--;
-                    velocity_multi *= 2;
-                    player.ZoomIn();
                 }
                 else
                 {
-                    player.ZoomOut();
+                    player.ZoomReset();
+                    Kart.Cars[i].boostDirection = 0;
                 }
 
 
@@ -338,7 +351,22 @@ namespace OpenTk26_3
                     Kart.Cars[i].velocity = Kart.Cars[i].velocity.Normalized() * maxCarVelocity;
                 }
                 
-                    Kart.Cars[i].SetPos(Kart.Cars[i].velocity * tStep * velocity_multi);
+                Kart.Cars[i].SetPos(Kart.Cars[i].velocity * tStep * velocity_multi);
+
+                if (Kart.Cars[i].big > 0 && !Kart.Cars[i].bigged)
+                {
+                    Kart.Cars[i].Scale(3);
+                    Kart.Cars[i].bigged = true;
+                }
+                else if(Kart.Cars[i].bigged && Kart.Cars[i].big <= 0)
+                {
+                    Kart.Cars[i].Scale(1/3f);
+                    Kart.Cars[i].bigged = false;
+                }
+                else
+                {
+                    Kart.Cars[i].big--;
+                }
                 
                 //Console.WriteLine(Kart.Cars[i].velocity.Length);
 
@@ -414,30 +442,6 @@ namespace OpenTk26_3
                 Kart.Cars.Last().Scale(carScale);
                 Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension*2,Terrain.gridDimension*2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension*2, Terrain.gridDimension * 2)));
             }
-
-            if (input.IsKeyDown(Key.ShiftLeft))
-            {
-                Kart.Cars[0].velocity_multi = 2f;
-            }
-            else
-            {
-                Kart.Cars[0].velocity_multi = 1f;
-            }
-            if (input.IsKeyDown(Key.ControlLeft))
-            {
-                if (!bigger)
-                {
-
-                    Kart.Cars[0].Scale(5);
-                }
-                bigger = true;
-            }
-            else if(bigger)
-            {
-                Kart.Cars[0].Scale(0.2f);
-                bigger = false;
-            }
-
 
             DriveCar(Kart.Cars[0], input);
             MoveCars();
@@ -634,13 +638,17 @@ namespace OpenTk26_3
                 Vector4 ouut = (rotation * new Vector4(forward, 1));
                 return new Vector3(ouut);
             }
-            public void ZoomIn()
+            public void ZoomFast()
             {
                 zooooooom = (float)(0.0174533 * 55);
             }
-            public void ZoomOut()
+            public void ZoomReset()
             {
                zooooooom = (float)(0.0174533 * 60);
+            }
+            public void ZoomSlow()
+            {
+                zooooooom = (float)(0.0174533 * 65);
             }
         }
 
@@ -806,7 +814,7 @@ namespace OpenTk26_3
                     if (inp[i].Substring(0, 2) == "v ")
                     {
                         string[] point = inp[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        ver.Add(new vertex(new Vector3(float.Parse(point[1]), float.Parse(point[2]), float.Parse(point[3])), Color.FromArgb(50, Math.Abs((int)col[0] + Game.rnd.Next(-50, 50)), Math.Abs((int)col[1] + Game.rnd.Next(-50, 50)), Math.Abs((int)col[2] + Game.rnd.Next(-50, 50)))));
+                        ver.Add(new vertex(new Vector3(float.Parse(point[1]), float.Parse(point[2]), float.Parse(point[3])), Color.FromArgb(255,Math.Min( Math.Abs((int)col[0] + Game.rnd.Next(-50, 50)),255), Math.Min(Math.Abs((int)col[1] + Game.rnd.Next(-50, 50)), 255), Math.Min(Math.Abs((int)col[2] + Game.rnd.Next(-50, 50)), 255))));
                     }
                     else if (inp[i].Substring(0, 2) == "f ")
                     {
@@ -1045,10 +1053,16 @@ namespace OpenTk26_3
 
             public static void SpawnItem()
             {
-                switch (rnd.Next(0, 1))
+                switch (rnd.Next(0, 3))
                 {
                     case 0:
                         Items.Add(new Boost());
+                        break;
+                    case 1:
+                        Items.Add(new Slow());
+                        break;
+                    case 2:
+                        Items.Add(new Giant());
                         break;
                 }
             }
@@ -1077,12 +1091,38 @@ namespace OpenTk26_3
             }
             public override void Consume(Kart car)
             {
+                car.boostDirection = 1;
                 car.boost = (1 * (int)(1 / tStep));
                 base.Consume(car);
             }
             public override bool Collide(Shape shape)
             {
-                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length*3)
+                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length*2)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+        public class Slow : Item
+        {
+            public Slow(string a = "Cube.obj") : base(a, Color.DarkGray)
+            {
+                
+            }
+            public override void Consume(Kart car)
+            {
+                if(car.big <= 0)
+                {
+                    car.boostDirection = -1;
+                    car.boost = (1 * (int)(1 / tStep));
+                    base.Consume(car);
+                }
+                base.Consume(car);
+            }
+            public override bool Collide(Shape shape)
+            {
+                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
                 {
                     return true;
                 }
@@ -1090,9 +1130,32 @@ namespace OpenTk26_3
             }
         }
 
+        public class Giant : Item
+        {
+            public Giant(string a = "Cube.obj") : base(a, Color.LightCyan)
+            {
+
+            }
+            public override void Consume(Kart car)
+            {
+                car.big = (2 * (int)(1 / tStep));
+                base.Consume(car);
+            }
+            public override bool Collide(Shape shape)
+            {
+                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
         public class Kart : Shape
         {
+            public int big = 0;
+            public bool bigged = false;
             public int boost = 0;
+            public int boostDirection = 0;
             public float velocity_multi = 1f;
             public bool onGrass = false;
             public static List<Kart> Cars = new List<Kart>();
