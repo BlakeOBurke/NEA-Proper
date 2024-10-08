@@ -2146,6 +2146,26 @@ namespace OpenTk26_3
             }
         }
 
+        public static int choiceValidator(int lower, int upper)
+        {
+            int choice;
+            while (true)
+            {
+                try
+                {
+                    choice = int.Parse(Console.ReadLine());
+                    if (choice >= lower && choice <= upper)
+                    {
+                        return choice;
+                    }
+                    Console.WriteLine("invalid input");
+                }
+                catch
+                {
+                    Console.WriteLine("invalid input");
+                }
+            }
+        }
     }
     
 }
