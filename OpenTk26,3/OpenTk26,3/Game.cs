@@ -41,7 +41,7 @@ namespace OpenTk26_3
         public static int MOUSEX, MOUSEY;
         public static int MOUSEscroll = 0;
         public static bool quickMov = false;
-
+        public static int frameCount = 0;
 
 
         public static float maxCarAcceleration = .25f * 30;
@@ -414,6 +414,11 @@ namespace OpenTk26_3
 
             //landscape.terrain.SetPos(-landscape.terrain.avgPos());
             //racetrack.terrain.SetPos(-landscape.terrain.avgPos());
+
+            for (int i = 0; i < 20; i++)
+            {
+                Item.SpawnItem();
+            }
         }
         protected override void OnUnload(EventArgs e)
         {
@@ -423,6 +428,8 @@ namespace OpenTk26_3
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
+            frameCount++;
+            frameCount = frameCount % 60;
 
             KeyboardState input = Keyboard.GetState();
 
@@ -477,6 +484,7 @@ namespace OpenTk26_3
                     Item.Items[i].Consume(Kart.Cars[0]);
                     i--;
                 }
+                
             }
         }
 
@@ -564,6 +572,10 @@ namespace OpenTk26_3
             models.Add(racetrack.terrain);
             foreach (Item item in Item.Items)
             {
+                item.shape.centre.Y += meter*0.3f * (float)(Math.Sin((Math.PI / 30f) * (frameCount+item.frameOffset)) - Math.Sin((Math.PI / 30f) * (frameCount - 1 + item.frameOffset)));
+                //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
+                item.shape.angle += 0.0174533f * item.rotateOffset;
+
                 models.Add(item.shape);
             }
             //models.Add(water.terrain);
@@ -1031,13 +1043,21 @@ namespace OpenTk26_3
 
         public  class Item
         {
+            public int frameOffset = rnd.Next(0,60);
+            public Vector3 rotateOffset = new Vector3((float)rnd.NextDouble(), (float)rnd.NextDouble(), (float)rnd.NextDouble());
             public Item(string a, Color b)
             {
                 this.shape = new Shape(a, b);
+                
                 Items.Add(this);
                 this.shape.Scale(meter * 2);
                 //place on track function
-                PlaceItem();
+
+                if (!PlaceItem())
+                {
+                    this.Delete();
+                } 
+                this.shape.centre.Y += 2 * meter;
                 Console.WriteLine(this.shape.centre.X + " " + this.shape.centre.Z);
             }
             
@@ -1045,7 +1065,10 @@ namespace OpenTk26_3
             {
                 Console.WriteLine(Items.Remove(this));
             }
-
+            public virtual void Delete()
+            {
+                Items.Remove(this);
+            }
             public virtual bool Collide(Shape shape) { return false; }
 
             public Shape shape;
@@ -1066,8 +1089,10 @@ namespace OpenTk26_3
                         break;
                 }
             }
-            public void PlaceItem()
+            public bool PlaceItem()
             {
+                bool tooClose = false;
+                int tryCount = 0;
                 while (true)
                 {
                     shape.centre = new Vector3(rnd.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, rnd.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
@@ -1077,7 +1102,26 @@ namespace OpenTk26_3
                     if(tHeight > gHeight)
                     {
                         shape.centre.Y = shape.dimensions.Y*2+tHeight;
-                        break;
+                        foreach (Item item in Items)
+                        {
+                            if(item != this)
+                            {
+                                if ((item.shape.centre - this.shape.centre).Length < 100 * meter)
+                                {
+                                    tooClose = true;
+                                }
+                            }
+                        }
+                        if (tryCount > 10)
+                        {
+                            return false;
+                        }
+                        if (!tooClose)
+                        {
+                            return true;
+                        }
+                        tryCount++;
+                        tooClose = false;
                     }
                 }
             }
