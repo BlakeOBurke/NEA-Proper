@@ -20,7 +20,10 @@ namespace OpenTk26_3
     {
         static void Main(string[] args)
         {
-            Game ga = new Game(1200,900);
+            Random a = new Random();
+            int z = a.Next();
+            Console.WriteLine(z);
+            Game ga = new Game(1200,900, 816770052);
             ga.Run(30,30);
             //ga.Run();
             Console.WriteLine("hi");

@@ -32,7 +32,9 @@ namespace OpenTk26_3
     public class Game : GameWindow
     {
 
-        public static Random rnd = new Random(820368262);
+        //public static Random rnd = new Random(820368262);
+        public static int RandomSeed;
+        public static Random rnd = new Random(RandomSeed);
         static float[] vertices = { };
         static uint[] indices = { };
         public int VertexBufferObject;
@@ -64,9 +66,9 @@ namespace OpenTk26_3
         public static Terrain landscape;
         public static Terrain racetrack;
 
-        public Game(int width, int height) : base(width, height, GraphicsMode.Default, "game")
+        public Game(int width, int height, int seed) : base(width, height, GraphicsMode.Default, "game")
         {
-
+            RandomSeed = seed;
         }
         public static Color randomColor()
         {
@@ -1076,7 +1078,7 @@ namespace OpenTk26_3
 
             public static void SpawnItem()
             {
-                switch (rnd.Next(0, 3))
+                switch (rnd.Next(0, 4))
                 {
                     case 0:
                         Items.Add(new Boost());
@@ -1088,6 +1090,7 @@ namespace OpenTk26_3
                         Items.Add(new Giant());
                         break;
                 }
+                //Items.Add(new Microplastic());
             }
             public bool PlaceItem()
             {
@@ -1096,7 +1099,22 @@ namespace OpenTk26_3
                 while (true)
                 {
                     shape.centre = new Vector3(rnd.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, rnd.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
-                    
+
+
+                    ////
+                    //tripleCollide(landscape, this.shape, out float gHeight);
+                    //tripleCollide(racetrack, this.shape, out float tHeight);
+                    //if (tHeight > gHeight)
+                    //{
+                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + tHeight;
+                    //}
+                    //else
+                    //{
+                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + gHeight;
+                    //}
+                    //return true;
+                    ////
+
                     tripleCollide(landscape, this.shape, out float gHeight);
                     tripleCollide(racetrack, this.shape, out float tHeight);
                     if(tHeight > gHeight)
@@ -1150,7 +1168,7 @@ namespace OpenTk26_3
         }
         public class Slow : Item
         {
-            public Slow(string a = "Cube.obj") : base(a, Color.DarkGray)
+            public Slow(string a = "Cube.obj") : base(a, Color.DarkMagenta)
             {
                 
             }
@@ -1183,6 +1201,25 @@ namespace OpenTk26_3
             public override void Consume(Kart car)
             {
                 car.big = (2 * (int)(1 / tStep));
+                base.Consume(car);
+            }
+            public override bool Collide(Shape shape)
+            {
+                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+        public class Microplastic : Item
+        {
+            public Microplastic(string a = "Cube.obj") : base(a, randomColor())
+            {
+
+            }
+            public override void Consume(Kart car)
+            {
                 base.Consume(car);
             }
             public override bool Collide(Shape shape)
@@ -1445,27 +1482,28 @@ namespace OpenTk26_3
 
             public Shape terrain;
             public static int gridDimension = 128;
-            public static int HeightMulti = 5;
+            public static float HeightMulti = 3.5f;
             public static int squareSize = 5;
             float[,] heights = new float[gridDimension, gridDimension];
             public Vector2 startPos;
             public Vector2 checkpointPos;
             public static Vector2 offset;
-
+            Color LandColor = Color.Green;
+            Color TrackColor = Color.Black;
+            string path = "128_good.obj";
             public static void getRan()
             {
                 int raaaa = rnd.Next();
                 Console.WriteLine(raaaa);
-                rand = new Random(820368262);
+                rand = new Random(RandomSeed);
                 offset = new Vector2(rand.Next(0, 1000), rand.Next(0, 1000));
             }
 
 
-            string path = "128_good.obj";
             public Terrain()
             {
 
-                heights = Perlin.DoPerlin(heights, offset.X, offset.Y);
+                heights = Perlin.DoPerlin(heights, offset.X, offset.Y,4);
                 List<float> temporary = new List<float>();
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -1477,7 +1515,7 @@ namespace OpenTk26_3
                 Console.WriteLine(temporary.Min());
                 Console.WriteLine(temporary.Max());
 
-                terrain = new Shape(path, Color.Green);
+                terrain = new Shape(path, LandColor);
                 terrain.Scale(squareSize);
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -1486,7 +1524,7 @@ namespace OpenTk26_3
                         terrain.verts[gridDimension * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
 
                         Color col = terrain.verts[gridDimension * i + j].color;
-                        terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(heights[i, j] / Math.Sqrt(2) * 255), 255)) / 2, col.B);
+                        terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(Math.Log(heights[i, j]) * 255), 255)) / 2, col.B);
                         //Console.WriteLine(terrain.verts[gridDimension *i + j].pos.X);
                     }
                 }
@@ -1495,7 +1533,7 @@ namespace OpenTk26_3
             }
             public Terrain(string shape)
             {
-                heights = Perlin.DoPerlin(heights, offset.X, offset.Y);
+                heights = Perlin.DoPerlin(heights, offset.X, offset.Y,4);
                 List<float> temporary = new List<float>();
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -1507,7 +1545,7 @@ namespace OpenTk26_3
                 Console.WriteLine(temporary.Min());
                 Console.WriteLine(temporary.Max());
 
-                terrain = new Shape(path, Color.Black);
+                terrain = new Shape(path, TrackColor);
                 terrain.Scale(squareSize);
 
                 for (int i = 0; i < heights.GetLength(0); i++)
@@ -1517,7 +1555,7 @@ namespace OpenTk26_3
                         terrain.verts[gridDimension * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
 
                         Color col = terrain.verts[gridDimension * i + j].color;
-                        terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(heights[i, j] / Math.Sqrt(2) * 255), 255)) / 2, col.B);
+                        terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(Math.Log(heights[i, j]) * 255), 255)) / 2, col.B);
                         //terrain.verts[256 * i + j].color = Color.FromArgb(0,0,0);
                     }
                 }
@@ -2067,7 +2105,7 @@ namespace OpenTk26_3
             }
             public class Perlin
             {
-                public static float[,] DoPerlin(float[,] c, float Ox, float Oy)
+                public static float[,] DoPerlin(float[,] c, float Ox, float Oy, int levels)
                 {
                     float[,] a = new float[c.GetLength(0), c.GetLength(1)];
                     for (int i = 0; i < a.GetLength(0); i++)
@@ -2077,8 +2115,10 @@ namespace OpenTk26_3
                             float x = Ox + i / (float)a.GetLength(0);
                             float y = Oy + j / (float)a.GetLength(1);
 
-                            a[i, j] = EvaluateFBM(x, y, 1, 1, 3, 0.5f, 2f);
-                            a[i, j] = (float)Math.Pow(a[i, j], 1.3f);
+                            a[i, j] = SampleNoise(x, y, 1, 1, levels, 0.5f, 2f);
+                            //a[i, j] = (float)Math.Pow(a[i, j], 1.3f);
+                            a[i, j] = (float)Math.Pow(Math.E, a[i,j]);
+
                         }
                     }
 
@@ -2114,7 +2154,7 @@ namespace OpenTk26_3
                     }*/
                     return a;
                 }
-                static float EvaluateFBM(float x, float y, float amplitude, float frequency, int octaveCount, float persistence, float lacunarity)
+                static float SampleNoise(float x, float y, float amplitude, float frequency, int octaveCount, float persistence, float lacunarity)
                 {
                     float value = 0;
 
@@ -2124,32 +2164,30 @@ namespace OpenTk26_3
                         amplitude *= persistence;
                         frequency *= lacunarity;
                     }
+                    value = value / (float)(2 - Math.Pow(.5f, octaveCount-1));
                     return value;
                 }
 
-                static float interpolate(float a0, float a1, float w)
+                static float Lerp(float a0, float a1, float w)
                 {
+                    //lerp means linear interpolate, it isnt linearly interpolating cause I changed my mind
                     if (0.0 > w) return a0;
                     if (1.0 < w) return a1;
 
                     //return a1 * w + (1 - w) * a0;
+                    //"smooth step" function from wikipedia, meant to be smoother instead of a linear mapping
                     return (float)((a1 - a0) * (3.0 - w * 2.0) * w * w + a0);
                 }
 
                 static Vector2 randomGradient(int ix, int iy)
                 {
-                    ix = ix % 64;
-                    iy = iy % 64;
-                    // No precomputed gradients mean this works for any number of grid coordinates
-                    const long w = 8 * sizeof(long);
-                    const long s = w / 2;
-                    long a = (long)ix, b = (long)iy;
-                    a *= 3284157443; b ^= (int)a << (int)s | (int)a >> (int)w - (int)s;
-                    b *= 1911520717; a ^= (int)b << (int)s | (int)b >> (int)w - (int)s;
-                    a *= 2048419325;
-                    float random = a * (float)(3.14159265 / ~(~0u >> 1)); // in [0, 2*Pi]
-                    Vector2 v;
-                    v.X = (float)Math.Cos(random); v.Y = (float)Math.Sin(random);
+                    //PSEUDO random direction vector -> same ix and iy = same vector 
+
+                    Random randx = new Random(ix);
+                    Random randy = new Random(iy);
+                    Random rar = new Random(randx.Next() * randy.Next());
+
+                    Vector2 v = new Vector2((float)Math.Cos(rar.Next()),(float)(Math.Sin(rar.Next())));
                     return v;
                 }
 
@@ -2177,13 +2215,13 @@ namespace OpenTk26_3
 
                     n0 = DotProduct(x0, y0, x, y);
                     n1 = DotProduct(x1, y0, x, y);
-                    ix0 = interpolate(n0, n1, sx);
+                    ix0 = Lerp(n0, n1, sx);
 
                     n0 = DotProduct(x0, y1, x, y);
                     n1 = DotProduct(x1, y1, x, y);
-                    ix1 = interpolate(n0, n1, sx);
+                    ix1 = Lerp(n0, n1, sx);
 
-                    value = interpolate(ix0, ix1, sy);
+                    value = Lerp(ix0, ix1, sy);
 
                     return value + 0.5f;
                 }
