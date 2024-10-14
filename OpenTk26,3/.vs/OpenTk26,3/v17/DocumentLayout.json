@@ -1,13 +1,13 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "H:\\11.10.24 brokey\\NEA-Proper\\OpenTk26,3\\",
+  "WorkspaceRootPath": "H:\\NEA-Proper\\OpenTk26,3\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6B9130EB-70AC-4047-8F06-FFD9DFAA9E50}|OpenTk26,3\\OpenTk26,3.csproj|h:\\11.10.24 brokey\\nea-proper\\opentk26,3\\opentk26,3\\game.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{6B9130EB-70AC-4047-8F06-FFD9DFAA9E50}|OpenTk26,3\\OpenTk26,3.csproj|h:\\nea-proper\\opentk26,3\\opentk26,3\\game.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6B9130EB-70AC-4047-8F06-FFD9DFAA9E50}|OpenTk26,3\\OpenTk26,3.csproj|solutionrelative:opentk26,3\\game.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6B9130EB-70AC-4047-8F06-FFD9DFAA9E50}|OpenTk26,3\\OpenTk26,3.csproj|H:\\11.10.24 brokey\\NEA-Proper\\OpenTk26,3\\opentk26,3\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{6B9130EB-70AC-4047-8F06-FFD9DFAA9E50}|OpenTk26,3\\OpenTk26,3.csproj|H:\\NEA-Proper\\OpenTk26,3\\opentk26,3\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6B9130EB-70AC-4047-8F06-FFD9DFAA9E50}|OpenTk26,3\\OpenTk26,3.csproj|solutionrelative:opentk26,3\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -24,11 +24,11 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Game.cs",
-              "DocumentMoniker": "H:\\11.10.24 brokey\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Game.cs",
+              "DocumentMoniker": "H:\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Game.cs",
               "RelativeDocumentMoniker": "OpenTk26,3\\Game.cs",
-              "ToolTip": "H:\\11.10.24 brokey\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Game.cs",
+              "ToolTip": "H:\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Game.cs",
               "RelativeToolTip": "OpenTk26,3\\Game.cs",
-              "ViewState": "AQIAAFoCAAAAAAAAAAAgwGsEAAApAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAK4BAAAJAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-09-06T11:48:16.482Z",
               "EditorCaption": ""
@@ -37,11 +37,11 @@
               "$type": "Document",
               "DocumentIndex": 1,
               "Title": "Program.cs",
-              "DocumentMoniker": "H:\\11.10.24 brokey\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Program.cs",
+              "DocumentMoniker": "H:\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Program.cs",
               "RelativeDocumentMoniker": "OpenTk26,3\\Program.cs",
-              "ToolTip": "H:\\11.10.24 brokey\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Program.cs",
+              "ToolTip": "H:\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Program.cs",
               "RelativeToolTip": "OpenTk26,3\\Program.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAABYAAAAnAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABMAAAAFAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-09-06T11:48:16.61Z",
               "EditorCaption": ""

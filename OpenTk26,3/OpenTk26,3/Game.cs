@@ -27,7 +27,7 @@ using System.Runtime;
 
 namespace OpenTk26_3
 {
-    
+
 
     public class Game : GameWindow
     {
@@ -243,11 +243,11 @@ namespace OpenTk26_3
             cam.camDistance -= (moose.ScrollWheelValue + MOUSEscroll);
             MOUSEscroll = -moose.ScrollWheelValue;
             if (cam.camDistance > cam.camMaxDistance) { cam.camDistance = cam.camMaxDistance; }
-            if(cam.camDistance < cam.camMinDistance) { cam.camDistance = cam.camMinDistance; }
+            if (cam.camDistance < cam.camMinDistance) { cam.camDistance = cam.camMinDistance; }
 
             cam.direction = new Vector3(cam.Ddirection.X, cam.Ddirection.Y + (float)Math.Atan2(car.getForward().X, car.getForward().Z), 0f);
 
-            cam.pos = car.centre - cam.camforward() * cam.camDistance *(car.scale.Length/3f) /**(1f+car.velocity.Length/4)*/;
+            cam.pos = car.centre - cam.camforward() * cam.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
 
         }
 
@@ -269,7 +269,7 @@ namespace OpenTk26_3
             {
                 if (car.velocity.Length > .5f)
                 {
-                    car.angle.Y -= car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep *1.5f : 0.02f * car.velocity.Length * tStep;
+                    car.angle.Y -= car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
                 }
                 car.velocity_multi = 0.85f;
             }
@@ -292,7 +292,7 @@ namespace OpenTk26_3
             //    car.angle.Y += 0.02f;
             //}
 
-            
+
         }
         public void MoveCars()
         {
@@ -307,7 +307,7 @@ namespace OpenTk26_3
                 {
                     Kart.Cars[i].centre.Y = (float)Math.Max(lHeight, tHeight) + Kart.Cars[i].dimensions.Y / 2f;
                 }
-                if(lHeight > tHeight)
+                if (lHeight > tHeight)
                 {
                     Kart.Cars[i].onGrass = true;
                 }
@@ -322,7 +322,7 @@ namespace OpenTk26_3
 
                 if (Kart.Cars[i].onGrass == true && Kart.Cars[i].big <= 0 && (Kart.Cars[i].boost <= 0 || Kart.Cars[i].boostDirection == -1))
                 {
-                    velocity_multi *= 0.35f;   
+                    velocity_multi *= 0.35f;
                 }
 
 
@@ -352,7 +352,7 @@ namespace OpenTk26_3
                 {
                     Kart.Cars[i].velocity = Kart.Cars[i].velocity.Normalized() * maxCarVelocity;
                 }
-                
+
                 Kart.Cars[i].SetPos(Kart.Cars[i].velocity * tStep * velocity_multi);
 
                 if (Kart.Cars[i].big > 0 && !Kart.Cars[i].bigged)
@@ -360,16 +360,16 @@ namespace OpenTk26_3
                     Kart.Cars[i].Scale(3);
                     Kart.Cars[i].bigged = true;
                 }
-                else if(Kart.Cars[i].bigged && Kart.Cars[i].big <= 0)
+                else if (Kart.Cars[i].bigged && Kart.Cars[i].big <= 0)
                 {
-                    Kart.Cars[i].Scale(1/3f);
+                    Kart.Cars[i].Scale(1 / 3f);
                     Kart.Cars[i].bigged = false;
                 }
                 else
                 {
                     Kart.Cars[i].big--;
                 }
-                
+
                 //Console.WriteLine(Kart.Cars[i].velocity.Length);
 
                 //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
@@ -399,7 +399,7 @@ namespace OpenTk26_3
 
             Kart.Cars.Add(new Kart(randomColor()));
             Kart.Cars.Last().Scale(carScale);
-            Kart.Cars.Last().SetPos(new Vector3(0,40,0));
+            Kart.Cars.Last().SetPos(new Vector3(0, 40, 0));
 
 
             //starts the random seed for the terrain stuff, user will be promted to enter one
@@ -449,7 +449,7 @@ namespace OpenTk26_3
             {
                 Kart.Cars.Add(new Kart(randomColor()));
                 Kart.Cars.Last().Scale(carScale);
-                Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension*2,Terrain.gridDimension*2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension*2, Terrain.gridDimension * 2)));
+                Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2)));
             }
 
             DriveCar(Kart.Cars[0], input);
@@ -459,7 +459,7 @@ namespace OpenTk26_3
             if (input.IsKeyDown(Key.Z))
             {
                 Item.SpawnItem();
-                
+
             }
 
 
@@ -480,18 +480,16 @@ namespace OpenTk26_3
 
 
             for (int i = 0; i < Item.Items.Count; i++)
-            { 
+            {
                 if (Item.Items[i].Collide(Kart.Cars[0]))
                 {
                     Item.Items[i].Consume(Kart.Cars[0]);
                     i--;
                 }
-                
+
             }
         }
 
-        //static List<float> verts;
-        //static List<uint> inds;
         public void drawObj(List<Shape> a, Matrix4 proj)
         {
             for (int i = 0; i < a.Count(); i++)
@@ -561,7 +559,7 @@ namespace OpenTk26_3
 
             }
         }
-        
+
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -574,7 +572,7 @@ namespace OpenTk26_3
             models.Add(racetrack.terrain);
             foreach (Item item in Item.Items)
             {
-                item.shape.centre.Y += meter*0.3f * (float)(Math.Sin((Math.PI / 30f) * (frameCount+item.frameOffset)) - Math.Sin((Math.PI / 30f) * (frameCount - 1 + item.frameOffset)));
+                item.shape.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 30f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 30f) * (frameCount - 1 + item.frameOffset)));
                 //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
                 item.shape.angle += 0.0174533f * item.rotateOffset;
 
@@ -625,7 +623,7 @@ namespace OpenTk26_3
 
         }
         public class camera
-        {        
+        {
             //distance from car to camera in follow modes
             public float camDistance = 20;
             public float camMinDistance = 8;
@@ -658,7 +656,7 @@ namespace OpenTk26_3
             }
             public void ZoomReset()
             {
-               zooooooom = (float)(0.0174533 * 60);
+                zooooooom = (float)(0.0174533 * 60);
             }
             public void ZoomSlow()
             {
@@ -828,7 +826,7 @@ namespace OpenTk26_3
                     if (inp[i].Substring(0, 2) == "v ")
                     {
                         string[] point = inp[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        ver.Add(new vertex(new Vector3(float.Parse(point[1]), float.Parse(point[2]), float.Parse(point[3])), Color.FromArgb(255,Math.Min( Math.Abs((int)col[0] + Game.rnd.Next(-50, 50)),255), Math.Min(Math.Abs((int)col[1] + Game.rnd.Next(-50, 50)), 255), Math.Min(Math.Abs((int)col[2] + Game.rnd.Next(-50, 50)), 255))));
+                        ver.Add(new vertex(new Vector3(float.Parse(point[1]), float.Parse(point[2]), float.Parse(point[3])), Color.FromArgb(255, Math.Min(Math.Abs((int)col[0] + Game.rnd.Next(-50, 50)), 255), Math.Min(Math.Abs((int)col[1] + Game.rnd.Next(-50, 50)), 255), Math.Min(Math.Abs((int)col[2] + Game.rnd.Next(-50, 50)), 255))));
                     }
                     else if (inp[i].Substring(0, 2) == "f ")
                     {
@@ -1043,14 +1041,14 @@ namespace OpenTk26_3
             }
         }
 
-        public  class Item
+        public class Item
         {
-            public int frameOffset = rnd.Next(0,60);
+            public int frameOffset = rnd.Next(0, 60);
             public Vector3 rotateOffset = new Vector3((float)rnd.NextDouble(), (float)rnd.NextDouble(), (float)rnd.NextDouble());
             public Item(string a, Color b)
             {
                 this.shape = new Shape(a, b);
-                
+
                 Items.Add(this);
                 this.shape.Scale(meter * 2);
                 //place on track function
@@ -1058,11 +1056,11 @@ namespace OpenTk26_3
                 if (!PlaceItem())
                 {
                     this.Delete();
-                } 
+                }
                 this.shape.centre.Y += 2 * meter;
                 Console.WriteLine(this.shape.centre.X + " " + this.shape.centre.Z);
             }
-            
+
             public virtual void Consume(Kart car)
             {
                 Console.WriteLine(Items.Remove(this));
@@ -1117,12 +1115,12 @@ namespace OpenTk26_3
 
                     tripleCollide(landscape, this.shape, out float gHeight);
                     tripleCollide(racetrack, this.shape, out float tHeight);
-                    if(tHeight > gHeight)
+                    if (tHeight > gHeight)
                     {
-                        shape.centre.Y = shape.dimensions.Y*2+tHeight;
+                        shape.centre.Y = shape.dimensions.Y * 2 + tHeight;
                         foreach (Item item in Items)
                         {
-                            if(item != this)
+                            if (item != this)
                             {
                                 if ((item.shape.centre - this.shape.centre).Length < 100 * meter)
                                 {
@@ -1159,7 +1157,7 @@ namespace OpenTk26_3
             }
             public override bool Collide(Shape shape)
             {
-                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length*2)
+                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
                 {
                     return true;
                 }
@@ -1170,11 +1168,11 @@ namespace OpenTk26_3
         {
             public Slow(string a = "Cube.obj") : base(a, Color.DarkMagenta)
             {
-                
+
             }
             public override void Consume(Kart car)
             {
-                if(car.big <= 0)
+                if (car.big <= 0)
                 {
                     car.boostDirection = -1;
                     car.boost = (1 * (int)(1 / tStep));
@@ -1383,7 +1381,7 @@ namespace OpenTk26_3
             return 0;
         }
 
-        public static int  Collision2(Terrain terrain, Vector3 B, out float Height, out Vector3 normal)
+        public static int Collision2(Terrain terrain, Vector3 B, out float Height, out Vector3 normal)
         {
             //return 0 if above the terrain
             //1 if under the track
@@ -1483,6 +1481,7 @@ namespace OpenTk26_3
             public Shape terrain;
             public static int gridDimension = 128;
             public static float HeightMulti = 3.5f;
+            public static int trackSize = 8;
             public static int squareSize = 5;
             float[,] heights = new float[gridDimension, gridDimension];
             public Vector2 startPos;
@@ -1503,7 +1502,7 @@ namespace OpenTk26_3
             public Terrain()
             {
 
-                heights = Perlin.DoPerlin(heights, offset.X, offset.Y,4);
+                heights = Perlin.DoPerlin(heights, offset.X, offset.Y, 4);
                 List<float> temporary = new List<float>();
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -1533,7 +1532,7 @@ namespace OpenTk26_3
             }
             public Terrain(string shape)
             {
-                heights = Perlin.DoPerlin(heights, offset.X, offset.Y,4);
+                heights = Perlin.DoPerlin(heights, offset.X, offset.Y, 4);
                 List<float> temporary = new List<float>();
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -1560,15 +1559,15 @@ namespace OpenTk26_3
                     }
                 }
 
-                Tile[,] track = new Tile[8, 8];
+                Tile[,] track = new Tile[trackSize, trackSize];
                 Vector2 StartTile = new Vector2(0, 0);
                 Vector2 CheckTile = new Vector2(0, 0);
                 Tile.GenerateTrack(ref track, ref StartTile, ref CheckTile);
-                startPos = new Vector2((StartTile.X - 4 + .5f) * 16, (StartTile.Y - 4 + .5f) * 16);
-                checkpointPos = new Vector2((CheckTile.X - 4 + .5f) * 16, (CheckTile.Y - 4 + .5f) * 16);
-                int trackMin = 3;
-                int trackMax = 12;
-                int trackGrid = 16;
+                startPos = new Vector2((StartTile.X - (trackSize/2) + .5f) * (gridDimension/trackSize), (StartTile.Y - (trackSize/2) + .5f) * (gridDimension / trackSize));
+                checkpointPos = new Vector2((CheckTile.X - (trackSize / 2) + .5f) * (gridDimension / trackSize), (CheckTile.Y - (trackSize / 2) + .5f) * (gridDimension / trackSize));
+                int trackMin = (gridDimension / trackSize)/4;
+                int trackMax = ((gridDimension / trackSize)*3)/4;
+                int trackGrid = (gridDimension / trackSize);
 
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -2117,7 +2116,7 @@ namespace OpenTk26_3
 
                             a[i, j] = SampleNoise(x, y, 1, 1, levels, 0.5f, 2f);
                             //a[i, j] = (float)Math.Pow(a[i, j], 1.3f);
-                            a[i, j] = (float)Math.Pow(Math.E, a[i,j]);
+                            a[i, j] = (float)Math.Pow(Math.E, a[i, j]);
 
                         }
                     }
@@ -2164,7 +2163,7 @@ namespace OpenTk26_3
                         amplitude *= persistence;
                         frequency *= lacunarity;
                     }
-                    value = value / (float)(2 - Math.Pow(.5f, octaveCount-1));
+                    value = value / (float)(2 - Math.Pow(.5f, octaveCount - 1));
                     return value;
                 }
 
@@ -2187,7 +2186,7 @@ namespace OpenTk26_3
                     Random randy = new Random(iy);
                     Random rar = new Random(randx.Next() * randy.Next());
 
-                    Vector2 v = new Vector2((float)Math.Cos(rar.Next()),(float)(Math.Sin(rar.Next())));
+                    Vector2 v = new Vector2((float)Math.Cos(rar.Next()), (float)(Math.Sin(rar.Next())));
                     return v;
                 }
 
@@ -2248,6 +2247,7 @@ namespace OpenTk26_3
                 }
             }
         }
+
     }
     
 }
