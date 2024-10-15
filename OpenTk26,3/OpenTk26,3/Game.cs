@@ -44,7 +44,7 @@ namespace OpenTk26_3
         public static int MOUSEscroll = 0;
         public static bool quickMov = false;
         public static int frameCount = 0;
-
+        public static int TargetLaps = 3;
 
         public static float maxCarAcceleration = .25f * 30;
         public static float maxCarVelocity = 2f * 30;
@@ -53,7 +53,7 @@ namespace OpenTk26_3
         public const float meter = 0.5f;
         public const float Gravity = -9.81f * 5;
 
-        public const float carScale = 1.0f;
+        public const float carScale = .9f;
 
 
         public static Game.camera player = new Game.camera(0, 0, 0);
@@ -312,9 +312,47 @@ namespace OpenTk26_3
                     Kart.Cars[i].onGrass = true;
                 }
                 else
-                {
+                {//check checkpoints
                     Kart.Cars[i].onGrass = false;
+
+
+
+                    //if (Vector2.Dot(carPos-(Checkpos-(Terrain.gridDimension/Terrain.trackSize)*new Vector2(Terrain.squareSize, Terrain.squareSize)), carPos-(Checkpos + (Terrain.gridDimension / Terrain.trackSize) * new Vector2(Terrain.squareSize, Terrain.squareSize))) < 1)
+                    //{
+                    //    if (Kart.Cars[i].checkState == 'S')
+                    //    {
+                    //        Console.WriteLine("hit checkpoint");
+                    //        Kart.Cars[i].checkState = 'C';
+                    //    }
+                    //}
+                    //else if (Vector2.Dot(carPos - (Startpos - (Terrain.gridDimension / Terrain.trackSize) * new Vector2(Terrain.squareSize, Terrain.squareSize)), carPos - (Startpos + (Terrain.gridDimension / Terrain.trackSize) * new Vector2(Terrain.squareSize, Terrain.squareSize))) < 1)
+                    //{
+                    //    if (Kart.Cars[i].checkState == 'C')
+                    //    {
+                    //        Console.WriteLine("hit start");
+                    //        Kart.Cars[i].checkState = 'S';
+                    //        Kart.Cars[i].Laps += 1;
+                    //        if (Kart.Cars[i].Laps == TargetLaps)
+                    //        {
+                    //            throw new System.NotImplementedException();
+                    //        }
+                    //    }
+                    //}
                 }
+                Vector2 carPos = Kart.Cars[i].centre.Zx;
+                Vector2 Checkpos = terrain2World(racetrack.checkpointPos);
+                Vector2 Startpos = terrain2World(racetrack.startPos);
+                Checkpos = Checkpos.Yx;
+                if ((Checkpos - carPos).Length < (Terrain.gridDimension / Terrain.trackSize) / 2)
+                {
+                    Console.WriteLine(frameCount);
+                    if (Kart.Cars[i].checkState == 'S')
+                    {
+                        Console.WriteLine("hit checkpoint");
+                        Kart.Cars[i].checkState = 'C';
+                    }
+                }
+                Console.WriteLine((Checkpos-carPos).Length);
 
                 Kart.Cars[i].velocity *= 0.95f;
 
@@ -445,12 +483,12 @@ namespace OpenTk26_3
             //FreeFollowCam(ref player, Kart.Cars[0]);
 
 
-            if (input.IsKeyDown(Key.Space))
-            {
-                Kart.Cars.Add(new Kart(randomColor()));
-                Kart.Cars.Last().Scale(carScale);
-                Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2)));
-            }
+            //if (input.IsKeyDown(Key.Space))
+            //{
+            //    Kart.Cars.Add(new Kart(randomColor()));
+            //    Kart.Cars.Last().Scale(carScale);
+            //    Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2)));
+            //}
 
             DriveCar(Kart.Cars[0], input);
             MoveCars();
@@ -459,7 +497,6 @@ namespace OpenTk26_3
             if (input.IsKeyDown(Key.Z))
             {
                 Item.SpawnItem();
-
             }
 
 
@@ -781,7 +818,7 @@ namespace OpenTk26_3
         public static Vector2 terrain2World(Vector2 pos)
         {
             pos = pos * Terrain.squareSize; //+ new Vector2(128, 128);
-            Console.WriteLine(pos.X + "  " + pos.Y);
+            //Console.WriteLine(pos.X + "  " + pos.Y);
 
             return pos;
         }
@@ -1189,7 +1226,6 @@ namespace OpenTk26_3
                 return false;
             }
         }
-
         public class Giant : Item
         {
             public Giant(string a = "Cube.obj") : base(a, Color.LightCyan)
@@ -1237,6 +1273,8 @@ namespace OpenTk26_3
             public int boostDirection = 0;
             public float velocity_multi = 1f;
             public bool onGrass = false;
+            public char checkState = 'S';
+            public int Laps = 0;
             public static List<Kart> Cars = new List<Kart>();
             public Kart(Color color) : base("Kart.obj", color) { GetDimension(); normal = new Vector3(0, 1, 0); }
             public override void Scale(float scale)
@@ -1380,7 +1418,6 @@ namespace OpenTk26_3
             //Console.WriteLine(Height);
             return 0;
         }
-
         public static int Collision2(Terrain terrain, Vector3 B, out float Height, out Vector3 normal)
         {
             //return 0 if above the terrain
@@ -1563,8 +1600,8 @@ namespace OpenTk26_3
                 Vector2 StartTile = new Vector2(0, 0);
                 Vector2 CheckTile = new Vector2(0, 0);
                 Tile.GenerateTrack(ref track, ref StartTile, ref CheckTile);
-                startPos = new Vector2((StartTile.X - (trackSize/2) + .5f) * (gridDimension/trackSize), (StartTile.Y - (trackSize/2) + .5f) * (gridDimension / trackSize));
-                checkpointPos = new Vector2((CheckTile.X - (trackSize / 2) + .5f) * (gridDimension / trackSize), (CheckTile.Y - (trackSize / 2) + .5f) * (gridDimension / trackSize));
+                startPos = new Vector2((StartTile.X - (trackSize/2f) + .5f) * (gridDimension/trackSize), (StartTile.Y - (trackSize/2f) + .5f) * (gridDimension / trackSize));
+                checkpointPos = new Vector2((CheckTile.X - (trackSize / 2f) + .5f) * (gridDimension / trackSize), (CheckTile.Y - (trackSize / 2f) + .5f) * (gridDimension / trackSize));
                 int trackMin = (gridDimension / trackSize)/4;
                 int trackMax = ((gridDimension / trackSize)*3)/4;
                 int trackGrid = (gridDimension / trackSize);
