@@ -33,6 +33,9 @@ namespace OpenTk26_3
     {
 
         //public static Random rnd = new Random(820368262);
+        public static int screenHeight;
+        public static int screenWidth;
+
         public static int RandomSeed;
         public static Random rnd = new Random(RandomSeed);
         static float[] vertices = { };
@@ -44,7 +47,9 @@ namespace OpenTk26_3
         public static int MOUSEscroll = 0;
         public static bool quickMov = false;
         public static int frameCount = 0;
-        public static int TargetLaps = 3;
+        public static int TotalframeCount = 0;
+        public static int TargetLaps = 2;
+        public static bool Finished = false;
 
         public static float maxCarAcceleration = .25f * 30;
         public static float maxCarVelocity = 2f * 30;
@@ -60,7 +65,7 @@ namespace OpenTk26_3
 
         Shader shader;
 
-        Stopwatch stopwatch = new Stopwatch();
+        public static Stopwatch stopwatch = new Stopwatch();
         float starttime = 0;
 
         public static Terrain landscape;
@@ -69,6 +74,8 @@ namespace OpenTk26_3
         public Game(int width, int height, int seed) : base(width, height, GraphicsMode.Default, "game")
         {
             RandomSeed = seed;
+            screenHeight = height;
+            screenWidth = width;
         }
         public static Color randomColor()
         {
@@ -203,8 +210,15 @@ namespace OpenTk26_3
             }
 
         }
-
-
+        public static void FinishedCam(ref camera cam)
+        {
+            float radius = 500f * meter;
+            cam.pos.Y = 100f;
+            cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*TotalframeCount); 
+            cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*TotalframeCount);
+            cam.forward = new Vector3(cam.pos.Normalized().X,0, cam.pos.Normalized().Z);
+            //FreeMouse(ref player);
+        }
         public static void FreeFollowCam(ref camera cam, Kart car)
         {
             //cam.pos = car.centre;
@@ -294,128 +308,114 @@ namespace OpenTk26_3
 
 
         }
-        public void MoveCars()
+        public void MoveCars(Kart car)
         {
-            for (int i = 0; i < Kart.Cars.Count(); i++)
+            tripleCollide(racetrack, car/*, out Vector2 raceAngle,*/ , out float tHeight);
+            tripleCollide(landscape, car/*, out Vector2 grassAngle,*/ , out float lHeight);
+            //Collision(racetrack, Kart.Cars[i].centre, out float tHeight);
+            //Collision(landscape, Kart.Cars[i].centre, out float lHeight
+            car.centre.Y += Gravity * tStep;
+            if (tHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y || lHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y)
             {
-                tripleCollide(racetrack, Kart.Cars[i]/*, out Vector2 raceAngle,*/ , out float tHeight);
-                tripleCollide(landscape, Kart.Cars[i]/*, out Vector2 grassAngle,*/ , out float lHeight);
-                //Collision(racetrack, Kart.Cars[i].centre, out float tHeight);
-                //Collision(landscape, Kart.Cars[i].centre, out float lHeight
-                Kart.Cars[i].centre.Y += Gravity * tStep;
-                if (tHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y || lHeight + Kart.Cars[i].dimensions.Y / 2f + 0.3f > Kart.Cars[i].centre.Y)
-                {
-                    Kart.Cars[i].centre.Y = (float)Math.Max(lHeight, tHeight) + Kart.Cars[i].dimensions.Y / 2f;
-                }
-                if (lHeight > tHeight)
-                {
-                    Kart.Cars[i].onGrass = true;
-                }
-                else
-                {//check checkpoints
-                    Kart.Cars[i].onGrass = false;
+                car.centre.Y = (float)Math.Max(lHeight, tHeight) + car.dimensions.Y / 2f;
+            }
+            if (lHeight > tHeight)
+            {
+                car.onGrass = true;
+            }
+            else
+            {//check checkpoints
+                car.onGrass = false;
 
-
-
-                    //if (Vector2.Dot(carPos-(Checkpos-(Terrain.gridDimension/Terrain.trackSize)*new Vector2(Terrain.squareSize, Terrain.squareSize)), carPos-(Checkpos + (Terrain.gridDimension / Terrain.trackSize) * new Vector2(Terrain.squareSize, Terrain.squareSize))) < 1)
-                    //{
-                    //    if (Kart.Cars[i].checkState == 'S')
-                    //    {
-                    //        Console.WriteLine("hit checkpoint");
-                    //        Kart.Cars[i].checkState = 'C';
-                    //    }
-                    //}
-                    //else if (Vector2.Dot(carPos - (Startpos - (Terrain.gridDimension / Terrain.trackSize) * new Vector2(Terrain.squareSize, Terrain.squareSize)), carPos - (Startpos + (Terrain.gridDimension / Terrain.trackSize) * new Vector2(Terrain.squareSize, Terrain.squareSize))) < 1)
-                    //{
-                    //    if (Kart.Cars[i].checkState == 'C')
-                    //    {
-                    //        Console.WriteLine("hit start");
-                    //        Kart.Cars[i].checkState = 'S';
-                    //        Kart.Cars[i].Laps += 1;
-                    //        if (Kart.Cars[i].Laps == TargetLaps)
-                    //        {
-                    //            throw new System.NotImplementedException();
-                    //        }
-                    //    }
-                    //}
-                }
-                Vector2 carPos = Kart.Cars[i].centre.Zx;
+                Vector2 carPos = car.centre.Zx;
                 Vector2 Checkpos = terrain2World(racetrack.checkpointPos);
                 Vector2 Startpos = terrain2World(racetrack.startPos);
+                //fix the startpos and checkpoint pos to align them to world grid
+
                 Checkpos = Checkpos.Yx;
-                if ((Checkpos - carPos).Length < (Terrain.gridDimension / Terrain.trackSize) / 2)
+                Startpos = Startpos.Yx;
+
+                //check some funky dot products to see if the car is in a square of the checkpoint or start
+                if (Vector2.Dot(carPos - (Checkpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Checkpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
                 {
-                    Console.WriteLine(frameCount);
-                    if (Kart.Cars[i].checkState == 'S')
+                    if (car.checkState == 'S')
                     {
                         Console.WriteLine("hit checkpoint");
-                        Kart.Cars[i].checkState = 'C';
+                        car.checkState = 'C';
                     }
                 }
-                Console.WriteLine((Checkpos-carPos).Length);
-
-                Kart.Cars[i].velocity *= 0.95f;
-
-                float velocity_multi = Kart.Cars[i].velocity_multi;
-
-                if (Kart.Cars[i].onGrass == true && Kart.Cars[i].big <= 0 && (Kart.Cars[i].boost <= 0 || Kart.Cars[i].boostDirection == -1))
+                if (Vector2.Dot(carPos - (Startpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Startpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
                 {
-                    velocity_multi *= 0.35f;
-                }
-
-
-                if (Kart.Cars[i].boost > 0)
-                {
-                    if (Kart.Cars[i].boostDirection == 1)
+                    if (car.checkState == 'C')
                     {
-                        velocity_multi *= 2;
-                        player.ZoomFast();
+                        car.Laps++;
+                        Console.WriteLine(car.Laps + "/" + TargetLaps);
+                        car.checkState = 'S';
                     }
-                    else
-                    {
-                        velocity_multi *= 0.65f;
-                        player.ZoomSlow();
-                    }
-
-                    Kart.Cars[i].boost--;
                 }
-                else
-                {
-                    player.ZoomReset();
-                    Kart.Cars[i].boostDirection = 0;
-                }
-
-
-                if (Kart.Cars[i].velocity.Length > maxCarVelocity)
-                {
-                    Kart.Cars[i].velocity = Kart.Cars[i].velocity.Normalized() * maxCarVelocity;
-                }
-
-                Kart.Cars[i].SetPos(Kart.Cars[i].velocity * tStep * velocity_multi);
-
-                if (Kart.Cars[i].big > 0 && !Kart.Cars[i].bigged)
-                {
-                    Kart.Cars[i].Scale(3);
-                    Kart.Cars[i].bigged = true;
-                }
-                else if (Kart.Cars[i].bigged && Kart.Cars[i].big <= 0)
-                {
-                    Kart.Cars[i].Scale(1 / 3f);
-                    Kart.Cars[i].bigged = false;
-                }
-                else
-                {
-                    Kart.Cars[i].big--;
-                }
-
-                //Console.WriteLine(Kart.Cars[i].velocity.Length);
-
-                //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
-
-                //Kart.Cars[i].angle.X = grassAngle.X;
-                //Kart.Cars[i].angle.Z = grassAngle.Y;
-                //Kart.Cars[i].angle.Y = (float)Math.Atan2(Kart.Cars[i].velocity.X, Kart.Cars[i].velocity.Z);
             }
+
+            car.velocity *= 0.95f;
+
+            float velocity_multi = car.velocity_multi;
+
+            if (car.onGrass == true && car.big <= 0 && (car.boost <= 0 || car.boostDirection == -1))
+            {
+                velocity_multi *= 0.35f;
+            }   
+
+
+            if (car.boost > 0)
+            {
+                if (car.boostDirection == 1)
+                {
+                    velocity_multi *= 2;
+                    player.ZoomFast();
+                }
+                else
+                {
+                    velocity_multi *= 0.65f;
+                    player.ZoomSlow();
+                }
+
+                car.boost--;
+            }
+            else
+            {
+                player.ZoomReset();
+                car.boostDirection = 0;
+            }
+
+
+            if (car.velocity.Length > maxCarVelocity)
+            {
+                car.velocity = car.velocity.Normalized() * maxCarVelocity;
+            }
+
+            car.SetPos(car.velocity * tStep * velocity_multi);
+
+            if (car.big > 0 && !car.bigged)
+            {
+                car.Scale(3);
+                car.bigged = true;
+            }
+            else if (car.bigged && car.big <= 0)
+            {
+                car.Scale(1 / 3f);
+                car.bigged = false;
+            }
+            else
+            {
+                car.big--;
+            }
+
+            //Console.WriteLine(Kart.Cars[i].velocity.Length);
+
+            //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
+
+            //Kart.Cars[i].angle.X = grassAngle.X;
+            //Kart.Cars[i].angle.Z = grassAngle.Y;
+            //Kart.Cars[i].angle.Y = (float)Math.Atan2(Kart.Cars[i].velocity.X, Kart.Cars[i].velocity.Z);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -467,9 +467,11 @@ namespace OpenTk26_3
         }
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
+            //Console.WriteLine(Kart.Cars[0].centre.X + "   " + Kart.Cars[0].centre.Z);
             base.OnUpdateFrame(e);
+            TotalframeCount++;
             frameCount++;
-            frameCount = frameCount % 60;
+            frameCount = frameCount % 360;
 
             KeyboardState input = Keyboard.GetState();
 
@@ -477,7 +479,10 @@ namespace OpenTk26_3
             {
                 Exit();
             }
-
+            if (input.IsKeyDown(Key.Space))
+            {
+                Finished = true;
+            }
             //FreeCam(ref player, input);
             //FreeMouse(ref player);
             //FreeFollowCam(ref player, Kart.Cars[0]);
@@ -490,13 +495,26 @@ namespace OpenTk26_3
             //    Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2)));
             //}
 
-            DriveCar(Kart.Cars[0], input);
-            MoveCars();
-            StrictFollowCam(ref player, Kart.Cars[0]);
+            if (!Finished)
+            {
+                DriveCar(Kart.Cars[0], input);
+                MoveCars(Kart.Cars[0]);
+                StrictFollowCam(ref player, Kart.Cars[0]);
+            }
+            else
+            {
+                FinishedCam(ref player);
+            }
 
             if (input.IsKeyDown(Key.Z))
             {
                 Item.SpawnItem();
+            }
+
+            if (Kart.Cars[0].Laps == TargetLaps && !Finished)
+            {
+                Console.WriteLine($"Finished with a time of {stopwatch.ElapsedMilliseconds/1000f} seconds!!!");
+                Finished = true;
             }
 
 
@@ -609,7 +627,7 @@ namespace OpenTk26_3
             models.Add(racetrack.terrain);
             foreach (Item item in Item.Items)
             {
-                item.shape.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 30f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 30f) * (frameCount - 1 + item.frameOffset)));
+                item.shape.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
                 //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
                 item.shape.angle += 0.0174533f * item.rotateOffset;
 
@@ -662,9 +680,9 @@ namespace OpenTk26_3
         public class camera
         {
             //distance from car to camera in follow modes
-            public float camDistance = 20;
-            public float camMinDistance = 8;
-            public float camMaxDistance = 40;
+            public float camDistance = 25;
+            public float camMinDistance = 15;
+            public float camMaxDistance = 55;
             public Vector3 pos;
             public Vector3 direction;
             public Vector2 Ddirection;
@@ -701,7 +719,6 @@ namespace OpenTk26_3
             }
         }
 
-
         public static Matrix4 pro(camera cam)
         {
             Vector3 forw = cam.camforward();
@@ -719,8 +736,7 @@ namespace OpenTk26_3
             {
                 cam.zooooooom = 0.0001f;
             }
-
-            camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, 1.33333f, 2.5f, 1000f);
+            camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
             return camer;
         }
         public class Shader
@@ -1080,7 +1096,7 @@ namespace OpenTk26_3
 
         public class Item
         {
-            public int frameOffset = rnd.Next(0, 60);
+            public int frameOffset = rnd.Next(0, 360);
             public Vector3 rotateOffset = new Vector3((float)rnd.NextDouble(), (float)rnd.NextDouble(), (float)rnd.NextDouble());
             public Item(string a, Color b)
             {
