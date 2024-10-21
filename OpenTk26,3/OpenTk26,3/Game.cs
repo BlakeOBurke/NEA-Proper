@@ -76,7 +76,12 @@ namespace OpenTk26_3
             RandomSeed = seed;
             screenHeight = height;
             screenWidth = width;
-        }
+            Finished = false;
+            Item.Items.Clear();
+            Kart.Cars.Clear();
+            Shape.shapes.Clear();
+            player = new Game.camera(0, 0, 0);
+    }
         public static Color randomColor()
         {
             return Color.FromArgb(255, rnd.Next(50, 205), rnd.Next(50, 205), rnd.Next(50, 205));
@@ -212,11 +217,12 @@ namespace OpenTk26_3
         }
         public static void FinishedCam(ref camera cam)
         {
-            float radius = 500f * meter;
-            cam.pos.Y = 100f;
-            cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*TotalframeCount); 
-            cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*TotalframeCount);
+            float radius = 600f * meter;
+            cam.pos.Y = 200f;
+            cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*(0.5f)*TotalframeCount); 
+            cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*(0.5f)*TotalframeCount);
             cam.forward = new Vector3(cam.pos.Normalized().X,0, cam.pos.Normalized().Z);
+            //Matrix4.LookAt()
             //FreeMouse(ref player);
         }
         public static void FreeFollowCam(ref camera cam, Kart car)
@@ -462,6 +468,9 @@ namespace OpenTk26_3
         }
         protected override void OnUnload(EventArgs e)
         {
+            float time = stopwatch.ElapsedMilliseconds / 1000f;
+            Console.WriteLine("enter your name to save your time, press enter to skip");
+            Program.Leaderboard board = new Program.Leaderboard(Console.ReadLine(), time, RandomSeed);
             base.OnUnload(e);
             shader.Dispose();
         }
@@ -721,6 +730,27 @@ namespace OpenTk26_3
 
         public static Matrix4 pro(camera cam)
         {
+            if (Finished == true)
+            {
+                Vector3 forww = -cam.pos;
+                //forww[0] += cam.pos[0]; forww[1] += cam.pos[1]; forww[2] += cam.pos[2];
+                //MY_vector3 right = MY_vector3.cross(forw, new MY_vector3(0,-1,0)).normalise();
+                //MY_vector3 upp = MY_vector3.cross(right, forw);
+                Matrix4 camera = Matrix4.LookAt(new Vector3(cam.pos[0], cam.pos[1], cam.pos[2]), new Vector3(forww[0], forww[1], forww[2]), new Vector3(0, 1, 0));
+
+                //camer.Transpose();
+                if (cam.zooooooom > Math.PI - 0.001f)
+                {
+                    cam.zooooooom = (float)Math.PI - 0.001f;
+                }
+                else if (cam.zooooooom < 0.0001f)
+                {
+                    cam.zooooooom = 0.0001f;
+                }
+                camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
+                return camera;
+
+            }
             Vector3 forw = cam.camforward();
             forw[0] += cam.pos[0]; forw[1] += cam.pos[1]; forw[2] += cam.pos[2];
             //MY_vector3 right = MY_vector3.cross(forw, new MY_vector3(0,-1,0)).normalise();
@@ -2280,26 +2310,7 @@ namespace OpenTk26_3
             }
         }
 
-        public static int choiceValidator(int lower, int upper)
-        {
-            int choice;
-            while (true)
-            {
-                try
-                {
-                    choice = int.Parse(Console.ReadLine());
-                    if (choice >= lower && choice <= upper)
-                    {
-                        return choice;
-                    }
-                    Console.WriteLine("invalid input");
-                }
-                catch
-                {
-                    Console.WriteLine("invalid input");
-                }
-            }
-        }
+
 
     }
     
