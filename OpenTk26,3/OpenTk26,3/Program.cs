@@ -23,6 +23,7 @@ namespace OpenTk26_3
     {
         static void Main(string[] args)
         {
+            bool finishGame = false;
             //Game ga = new Game(1200,900,0);
             int SEED = 0;
             while (true)
@@ -69,35 +70,22 @@ namespace OpenTk26_3
                             }
                         }
                         break;
+                    case 'X':
+                        finishGame = true;
+                        break;
 
                 }
+                if (finishGame) { break; }
             }
-            
-            //Game ga = new Game(1200,900, z);
-            //ga.Run(30,30);
-            //ga.Run();
-            Console.WriteLine("hi");
         }
         public class Leaderboard
         {
             List<Leaderboard_entry> board;
             public string path = "";
-            public Leaderboard(int length)
-            {
-                board = new List<Leaderboard_entry>();
-            }
-            public Leaderboard(string[] a)
-            {
-                board = new List<Leaderboard_entry>();
-                for (int i = 0; i < a.Length; i++)
-                {
-                    board.Add(new Leaderboard_entry(a[i].Split(' ')[0], float.Parse(a[i].Split(' ')[1])));
-                }
-            }
             public Leaderboard(string name, float time, int SEED)
             {
                 board = new List<Leaderboard_entry> { new Leaderboard_entry(name, time) };
-                path = SEED + "_BOARD.txt";
+                path = SEED.ToString();
                 SaveBoard();
             }
             public Leaderboard(string path)
@@ -148,7 +136,7 @@ namespace OpenTk26_3
                 {
                     a[i] = board[i].name + $" {board[i].time}";
                 }
-                File.WriteAllLines(path, a);
+                File.WriteAllLines(path + "_BOARD.txt", a);
             }
             public void sortBoard()
             {
@@ -160,9 +148,9 @@ namespace OpenTk26_3
                         swapped = false;
                         if (board[j].time > board[j + 1].time)
                         {
-                            Leaderboard_entry temp = board[j + 1];
-                            board[j + 1] = board[j];
-                            board[j] = temp;
+                            Leaderboard_entry temp = board[j + 1].Clone();
+                            board[j + 1] = board[j].Clone();
+                            board[j] = temp.Clone();
                             swapped = true;
                         }
                     }
@@ -180,15 +168,29 @@ namespace OpenTk26_3
                 sortBoard();
                 SaveBoard();
             }
+            public static bool LeaderBoard_Exist(string path)
+            {
+                try
+                {
+                    File.ReadAllLines(path + "_BOARD.txt");
+                    return true;
+                }
+                catch { return false; }
+            }
         }
-        public class Leaderboard_entry
+
+        public struct Leaderboard_entry
         {
-            public string name;
-            public float time;
+            public string name { get; set; }
+            public float time { get; set; }
             public Leaderboard_entry(string name, float time)
             {
                 this.name = name;
                 this.time = time;
+            }
+            public Leaderboard_entry Clone()
+            {
+                return new Leaderboard_entry(this.name, this.time);
             }
         }
         public static int choiceValidator(int lower, int upper)
@@ -211,9 +213,35 @@ namespace OpenTk26_3
                 }
             }
         }
+        public static char choiceMaker(string options)
+        {
+            while (true)
+            {
+                Console.WriteLine($"enter a character from '{options}'");
+                string choice = Console.ReadLine();
+                try
+                {
+                    char Selection = choice[0];
+                    char UpperSelection = choice.ToUpper()[0];
+                    if(options.Contains(Selection) || options.Contains(UpperSelection))
+                    {
+                        return UpperSelection;
+                    }
+                }
+                catch
+                {
+
+                }
+            }
+
+        }
         public static char Menu()
         {
-            return Console.ReadLine()[0];
+            Console.WriteLine("Play Game 'P'");
+            Console.WriteLine("View Leaderboard 'L'");
+            Console.WriteLine("PLACEHOLDER 'AHHH'");
+            Console.WriteLine("Exit 'X'");
+            return choiceMaker("PLX");
         } 
 
 

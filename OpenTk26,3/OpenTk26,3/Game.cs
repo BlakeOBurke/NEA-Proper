@@ -24,6 +24,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
 using System.Data.OleDb;
 using System.Runtime;
+using System.Net;
 
 namespace OpenTk26_3
 {
@@ -50,6 +51,7 @@ namespace OpenTk26_3
         public static int TotalframeCount = 0;
         public static int TargetLaps = 2;
         public static bool Finished = false;
+        public static float FinishTime;
 
         public static float maxCarAcceleration = .25f * 30;
         public static float maxCarVelocity = 2f * 30;
@@ -81,6 +83,7 @@ namespace OpenTk26_3
             Kart.Cars.Clear();
             Shape.shapes.Clear();
             player = new Game.camera(0, 0, 0);
+            FinishTime = 0;
     }
         public static Color randomColor()
         {
@@ -468,9 +471,34 @@ namespace OpenTk26_3
         }
         protected override void OnUnload(EventArgs e)
         {
-            float time = stopwatch.ElapsedMilliseconds / 1000f;
-            Console.WriteLine("enter your name to save your time, press enter to skip");
-            Program.Leaderboard board = new Program.Leaderboard(Console.ReadLine(), time, RandomSeed);
+            string LeaderADD = "";
+            while (true)
+            {
+                Console.WriteLine("enter your name to save your time, press enter to skip");
+                LeaderADD = Console.ReadLine();
+
+                if (LeaderADD.Contains(" "))
+                {
+                    Console.WriteLine("invalid name, try again");
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (LeaderADD.Count() == 0)
+            {
+            }
+            else if (Program.Leaderboard.LeaderBoard_Exist(RandomSeed.ToString()))
+            {
+                Program.Leaderboard board = new Program.Leaderboard(RandomSeed.ToString());
+                board.AddValue(Console.ReadLine(),FinishTime);
+            }
+            else
+            {
+                Program.Leaderboard board = new Program.Leaderboard(Console.ReadLine(), FinishTime, RandomSeed);
+            }
             base.OnUnload(e);
             shader.Dispose();
         }
@@ -492,17 +520,6 @@ namespace OpenTk26_3
             {
                 Finished = true;
             }
-            //FreeCam(ref player, input);
-            //FreeMouse(ref player);
-            //FreeFollowCam(ref player, Kart.Cars[0]);
-
-
-            //if (input.IsKeyDown(Key.Space))
-            //{
-            //    Kart.Cars.Add(new Kart(randomColor()));
-            //    Kart.Cars.Last().Scale(carScale);
-            //    Kart.Cars.Last().SetPos(new Vector3(rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2), rnd.Next(-Terrain.gridDimension * 2, Terrain.gridDimension * 2)));
-            //}
 
             if (!Finished)
             {
@@ -522,7 +539,8 @@ namespace OpenTk26_3
 
             if (Kart.Cars[0].Laps == TargetLaps && !Finished)
             {
-                Console.WriteLine($"Finished with a time of {stopwatch.ElapsedMilliseconds/1000f} seconds!!!");
+                FinishTime = stopwatch.ElapsedMilliseconds / 1000f;
+                Console.WriteLine($"Finished with a time of {FinishTime} seconds!!!");
                 Finished = true;
             }
 
@@ -1141,12 +1159,12 @@ namespace OpenTk26_3
                     this.Delete();
                 }
                 this.shape.centre.Y += 2 * meter;
-                Console.WriteLine(this.shape.centre.X + " " + this.shape.centre.Z);
+                //Console.WriteLine(this.shape.centre.X + " " + this.shape.centre.Z);
             }
 
             public virtual void Consume(Kart car)
             {
-                Console.WriteLine(Items.Remove(this));
+                Items.Remove(this);
             }
             public virtual void Delete()
             {
