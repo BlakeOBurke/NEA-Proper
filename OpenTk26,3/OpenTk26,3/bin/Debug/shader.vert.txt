@@ -10,5 +10,5 @@ uniform float time;
 void main()
 {
     gl_Position = vec4(aPos,1) * projection;
-    ourColor = aColor; // set ourColor to the input color we got from the vertex data
+    ourColor = aColor; // set ourColor to the input color from the vertex data
 }      

@@ -465,6 +465,9 @@ namespace OpenTk26_3
             //landscape.terrain.SetPos(-landscape.terrain.avgPos());
             //racetrack.terrain.SetPos(-landscape.terrain.avgPos());
 
+            //some global/ classglobal variables appear to persist between games, reseting randoms fixes this
+
+            Item.itemRand = new Random(RandomSeed);
             for (int i = 0; i < 20; i++)
             {
                 Item.SpawnItem();
@@ -496,11 +499,11 @@ namespace OpenTk26_3
                 else if (Program.Leaderboard.LeaderBoard_Exist(RandomSeed.ToString()))
                 {
                     Program.Leaderboard board = new Program.Leaderboard(RandomSeed.ToString());
-                    board.AddValue(Console.ReadLine(), FinishTime);
+                    board.AddValue(LeaderADD, FinishTime);
                 }
                 else
                 {
-                    Program.Leaderboard board = new Program.Leaderboard(Console.ReadLine(), FinishTime, RandomSeed);
+                    Program.Leaderboard board = new Program.Leaderboard(LeaderADD, FinishTime, RandomSeed);
                 }
             }
             base.OnUnload(e);
@@ -1148,8 +1151,9 @@ namespace OpenTk26_3
 
         public class Item
         {
-            public int frameOffset = rnd.Next(0, 360);
-            public Vector3 rotateOffset = new Vector3((float)rnd.NextDouble(), (float)rnd.NextDouble(), (float)rnd.NextDouble());
+            public static Random itemRand;
+            public int frameOffset;
+            public Vector3 rotateOffset;
             public Item(string a, Color b)
             {
                 this.shape = new Shape(a, b);
@@ -1163,6 +1167,9 @@ namespace OpenTk26_3
                     this.Delete();
                 }
                 this.shape.centre.Y += 2 * meter;
+
+                frameOffset = itemRand.Next(0, 360); 
+                rotateOffset = new Vector3((float)itemRand.NextDouble(), (float)itemRand.NextDouble(), (float)itemRand.NextDouble());
                 //Console.WriteLine(this.shape.centre.X + " " + this.shape.centre.Z);
             }
 
@@ -1181,7 +1188,7 @@ namespace OpenTk26_3
 
             public static void SpawnItem()
             {
-                switch (rnd.Next(0, 4))
+                switch (itemRand.Next(0, 4))
                 {
                     case 0:
                         Items.Add(new Boost());
@@ -1201,7 +1208,7 @@ namespace OpenTk26_3
                 int tryCount = 0;
                 while (true)
                 {
-                    shape.centre = new Vector3(rnd.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, rnd.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
+                    shape.centre = new Vector3(itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
 
 
                     ////
@@ -1662,10 +1669,10 @@ namespace OpenTk26_3
                     }
                 }
 
-                Tile[,] track = new Tile[trackSize, trackSize];
+                WaveFunctionCollapse[,] track = new WaveFunctionCollapse[trackSize, trackSize];
                 Vector2 StartTile = new Vector2(0, 0);
                 Vector2 CheckTile = new Vector2(0, 0);
-                Tile.GenerateTrack(ref track, ref StartTile, ref CheckTile);
+                WaveFunctionCollapse.GenerateTrack(ref track, ref StartTile, ref CheckTile);
                 startPos = new Vector2((StartTile.X - (trackSize/2f) + .5f) * (gridDimension/trackSize), (StartTile.Y - (trackSize/2f) + .5f) * (gridDimension / trackSize));
                 checkpointPos = new Vector2((CheckTile.X - (trackSize / 2f) + .5f) * (gridDimension / trackSize), (CheckTile.Y - (trackSize / 2f) + .5f) * (gridDimension / trackSize));
                 int trackMin = (gridDimension / trackSize)/4;
@@ -1738,7 +1745,7 @@ namespace OpenTk26_3
                 }
 
             }
-            public class Tile
+            public class WaveFunctionCollapse
             {
                 public int x;
                 public int y;
@@ -1818,12 +1825,12 @@ namespace OpenTk26_3
 
                 public List<string> possibilities = new List<string>();
 
-                public Tile(string name)
+                public WaveFunctionCollapse(string name)
                 {
                     this.name = name;
                 }
 
-                static void TrackOutline(ref Tile[,] track)
+                static void TrackOutline(ref WaveFunctionCollapse[,] track)
                 {
                     for (int i = 0; i < track.GetLength(0); i++)
                     {
@@ -1831,7 +1838,7 @@ namespace OpenTk26_3
                         {
                             if (i == 0 || j == 0 || i == track.GetLength(0) - 1 || j == track.GetLength(1) - 1)
                             {
-                                track[i, j] = new Tile("Air");
+                                track[i, j] = new WaveFunctionCollapse("Air");
                                 track[i, j].Up = "x";
                                 track[i, j].Down = "x";
                                 track[i, j].Left = "x";
@@ -1847,7 +1854,7 @@ namespace OpenTk26_3
                     }
                 }
 
-                static void GeneratePossibilities(ref List<Tile> tiles, ref Tile[,] track)
+                static void GeneratePossibilities(ref List<WaveFunctionCollapse> tiles, ref WaveFunctionCollapse[,] track)
                 {
                     for (int i = 1; i < track.GetLength(0) - 1; i++)
                     {
@@ -1916,7 +1923,7 @@ namespace OpenTk26_3
                                     left = " ";
                                 }
 
-                                tiles.Add(new Tile("Unassaigned"));
+                                tiles.Add(new WaveFunctionCollapse("Unassaigned"));
                                 tiles.Last().x = j;
                                 tiles.Last().y = i;
 
@@ -1966,7 +1973,7 @@ namespace OpenTk26_3
                     }
                 }
 
-                public static void GenerateTrack(ref Tile[,] track, ref Vector2 startPosition, ref Vector2 CheckpointPosition)
+                public static void GenerateTrack(ref WaveFunctionCollapse[,] track, ref Vector2 startPosition, ref Vector2 CheckpointPosition)
                 {
 
 
@@ -1980,7 +1987,7 @@ namespace OpenTk26_3
                         int w = rand.Next(2, track.GetLength(0) - 4);
                         startPosition = new Vector2(z, w);
                         //Console.WriteLine(startPos.X + "  " + startPos.Y);
-                        track[w, z] = new Tile("|");
+                        track[w, z] = new WaveFunctionCollapse("|");
                         track[w, z].Up = " ";
                         track[w, z].Down = " ";
                         track[w, z].Left = "x";
@@ -1988,14 +1995,14 @@ namespace OpenTk26_3
 
                         while (true)
                         {
-                            List<Tile> tiles = new List<Tile>();
+                            List<WaveFunctionCollapse> tiles = new List<WaveFunctionCollapse>();
 
                             GeneratePossibilities(ref tiles, ref track);
 
 
                             if (tiles.Count != 0)
                             {
-                                Tile A = tiles[rand.Next(0, tiles.Count)];
+                                WaveFunctionCollapse A = tiles[rand.Next(0, tiles.Count)];
                                 int minPossibilities = A.possibilities.Count;
 
                                 for (int i = 0; i < tiles.Count; i++)
@@ -2030,10 +2037,10 @@ namespace OpenTk26_3
                                 }
 
 
-                                A.Up = Tile.lookup[A.name][0];
-                                A.Down = Tile.lookup[A.name][1];
-                                A.Left = Tile.lookup[A.name][2];
-                                A.Right = Tile.lookup[A.name][3];
+                                A.Up = WaveFunctionCollapse.lookup[A.name][0];
+                                A.Down = WaveFunctionCollapse.lookup[A.name][1];
+                                A.Left = WaveFunctionCollapse.lookup[A.name][2];
+                                A.Right = WaveFunctionCollapse.lookup[A.name][3];
                                 track[A.y, A.x] = A;
                             }
                             else
@@ -2053,7 +2060,7 @@ namespace OpenTk26_3
 
                     //do regular track stuff to models in 3d
                 }
-                static bool trackValid(ref Tile[,] track)
+                static bool trackValid(ref WaveFunctionCollapse[,] track)
                 {
                     int cornerCount = 0;
                     int tracklength = 0;
@@ -2085,7 +2092,7 @@ namespace OpenTk26_3
                     }
                     return true;
                 }
-                static void displa(Tile[,] track)
+                static void displa(WaveFunctionCollapse[,] track)
                 {
                     for (int i = 0; i < track.GetLength(0); i++)
                     {
@@ -2096,7 +2103,7 @@ namespace OpenTk26_3
                         Console.WriteLine();
                     }
                 }
-                static Vector2 GetCheckpoint(Tile[,] track, Vector2 startPosition)
+                static Vector2 GetCheckpoint(WaveFunctionCollapse[,] track, Vector2 startPosition)
                 {
                     //needs fixing BADLY
 
@@ -2120,7 +2127,7 @@ namespace OpenTk26_3
                     y = (int)startPosition.Y;
                     x = (int)startPosition.X;
                     bool[,] discoverred = new bool[8, 8];
-                    List<Tile> tiles = new List<Tile>();
+                    List<WaveFunctionCollapse> tiles = new List<WaveFunctionCollapse>();
                     while (tracklength > 0)
                     {
                         //gonna traverse the track to find the place halfway along
