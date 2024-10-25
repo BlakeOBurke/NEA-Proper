@@ -38,7 +38,7 @@ namespace OpenTk26_3
         public static int screenWidth;
 
         public static int RandomSeed;
-        public static Random rnd = new Random(RandomSeed);
+        public static Random rnd;
         static float[] vertices = { };
         static uint[] indices = { };
         public int VertexBufferObject;
@@ -75,6 +75,7 @@ namespace OpenTk26_3
 
         public Game(int width, int height, int seed) : base(width, height, GraphicsMode.Default, "game")
         {
+            rnd = new Random(RandomSeed);
             RandomSeed = seed;
             screenHeight = height;
             screenWidth = width;
@@ -472,32 +473,35 @@ namespace OpenTk26_3
         protected override void OnUnload(EventArgs e)
         {
             string LeaderADD = "";
-            while (true)
+            if (Finished)
             {
-                Console.WriteLine("enter your name to save your time, press enter to skip");
-                LeaderADD = Console.ReadLine();
-
-                if (LeaderADD.Contains(" "))
+                while (true)
                 {
-                    Console.WriteLine("invalid name, try again");
+                    Console.WriteLine("enter your name to save your time, press enter to skip");
+                    LeaderADD = Console.ReadLine();
+
+                    if (LeaderADD.Contains(" "))
+                    {
+                        Console.WriteLine("invalid name, try again");
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (LeaderADD.Count() == 0)
+                {
+                }
+                else if (Program.Leaderboard.LeaderBoard_Exist(RandomSeed.ToString()))
+                {
+                    Program.Leaderboard board = new Program.Leaderboard(RandomSeed.ToString());
+                    board.AddValue(Console.ReadLine(), FinishTime);
                 }
                 else
                 {
-                    break;
+                    Program.Leaderboard board = new Program.Leaderboard(Console.ReadLine(), FinishTime, RandomSeed);
                 }
-            }
-
-            if (LeaderADD.Count() == 0)
-            {
-            }
-            else if (Program.Leaderboard.LeaderBoard_Exist(RandomSeed.ToString()))
-            {
-                Program.Leaderboard board = new Program.Leaderboard(RandomSeed.ToString());
-                board.AddValue(Console.ReadLine(),FinishTime);
-            }
-            else
-            {
-                Program.Leaderboard board = new Program.Leaderboard(Console.ReadLine(), FinishTime, RandomSeed);
             }
             base.OnUnload(e);
             shader.Dispose();
@@ -1310,9 +1314,9 @@ namespace OpenTk26_3
                 return false;
             }
         }
-        public class Microplastic : Item
+        public class NonItem : Item
         {
-            public Microplastic(string a = "Cube.obj") : base(a, randomColor())
+            public NonItem(string a = "Cube.obj") : base(a, randomColor())
             {
 
             }
@@ -1593,8 +1597,6 @@ namespace OpenTk26_3
             string path = "128_good.obj";
             public static void getRan()
             {
-                int raaaa = rnd.Next();
-                Console.WriteLine(raaaa);
                 rand = new Random(RandomSeed);
                 offset = new Vector2(rand.Next(0, 1000), rand.Next(0, 1000));
             }
@@ -2287,7 +2289,7 @@ namespace OpenTk26_3
                     Random randy = new Random(iy);
                     Random rar = new Random(randx.Next() * randy.Next());
 
-                    Vector2 v = new Vector2((float)Math.Cos(rar.Next()), (float)(Math.Sin(rar.Next())));
+                    Vector2 v = new Vector2((float)Math.Cos(rar.Next()*180/Math.PI), (float)(Math.Sin(rar.Next()*180/Math.PI)));
                     return v;
                 }
 
