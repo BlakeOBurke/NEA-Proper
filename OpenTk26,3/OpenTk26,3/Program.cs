@@ -21,6 +21,9 @@ namespace OpenTk26_3
 {
     internal class Program
     {
+        public static float FinishedTime = 0;
+
+        public static List<string> Inputs;
         static void Main(string[] args)
         {
             bool finishGame = false;
@@ -48,6 +51,8 @@ namespace OpenTk26_3
                             ga.Dispose();
                         }
                         Console.WriteLine($"your seed was {SEED}");
+                        SetLeader(SEED, FinishedTime);
+
                         break;
                     case 'L':
                         string choice;
@@ -73,9 +78,64 @@ namespace OpenTk26_3
                     case 'X':
                         finishGame = true;
                         break;
+                    case 'R':
+                        Console.WriteLine("enter a seed, press enter for a new course");
+                        if (int.TryParse(Console.ReadLine(), out int Seed))
+                        {
+                            SEED = Seed;
+                            Game ga = new Game(1200, 900, SEED, "R");
+                            ga.Run(30, 30);
+                            ga.Dispose();
+                        }
+                        break;
+
 
                 }
                 if (finishGame) { break; }
+            }
+        }
+        public static void setTime(float time)
+        {
+            FinishedTime = time;
+        }
+        public static void RecordInputs(List<string>inputs)
+        {
+            Inputs = inputs;
+        }
+        public static void SetLeader(int seed, float finishTime)
+        {
+            if (finishTime != 0)
+            {
+                string LeaderADD = "";
+                while (true)
+                {
+                    Console.WriteLine("enter your name to save your time");
+                    LeaderADD = Console.ReadLine();
+
+                    if (LeaderADD.Contains(" "))
+                    {
+                        Console.WriteLine("invalid name, try again");
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (Program.Leaderboard.LeaderBoard_Exist(seed.ToString()))
+                {
+                    Program.Leaderboard board = new Program.Leaderboard(seed.ToString());
+                    board.AddValue(LeaderADD, finishTime);
+                }
+                else
+                {
+                    Program.Leaderboard board = new Program.Leaderboard(LeaderADD, finishTime, seed);
+                }
+                Leaderboard CheckForReplay = new Program.Leaderboard(seed.ToString());
+                if (CheckForReplay.Fastest() == finishTime)
+                {
+                    File.WriteAllLines(seed.ToString(), Inputs);
+                }
             }
         }
         public class Leaderboard
@@ -97,6 +157,10 @@ namespace OpenTk26_3
                 {
                     board.Add(new Leaderboard_entry(a[i].Split(' ')[0], float.Parse(a[i].Split(' ')[1])));
                 }
+            }
+            public float Fastest()
+            {
+                return board[0].time;
             }
             public void top5()
             {
@@ -240,8 +304,9 @@ namespace OpenTk26_3
             Console.WriteLine("Play Game 'P'");
             Console.WriteLine("View Leaderboard 'L'");
             Console.WriteLine("PLACEHOLDER 'AHHH'");
+            Console.WriteLine("Replay 'R'");
             Console.WriteLine("Exit 'X'");
-            return choiceMaker("PLX");
+            return choiceMaker("PLRX");
         } 
 
 

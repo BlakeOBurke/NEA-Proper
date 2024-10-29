@@ -34,6 +34,11 @@ namespace OpenTk26_3
     {
 
         //public static Random rnd = new Random(820368262);
+        public static bool Replay;
+        public static List<string> Replay_inputs;
+        public static List<string> record_inputs = new List<string>();
+        public static bool Ghost;
+
         public static int screenHeight;
         public static int screenWidth;
 
@@ -84,8 +89,26 @@ namespace OpenTk26_3
             Kart.Cars.Clear();
             Shape.shapes.Clear();
             player = new Game.camera(0, 0, 0);
-            FinishTime = 0;
-    }
+            TotalframeCount = 0;
+        }
+        public Game(int width, int height, int seed, string mode) : base(width, height, GraphicsMode.Default, "game")
+        {
+            rnd = new Random(RandomSeed);
+            RandomSeed = seed;
+            screenHeight = height;
+            screenWidth = width;
+            Finished = false;
+            Item.Items.Clear();
+            Kart.Cars.Clear();
+            Shape.shapes.Clear();
+            player = new Game.camera(0, 0, 0);
+            TotalframeCount = 0;
+            if(mode == "R")
+            {
+                Replay = true;
+                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
+            }
+        }
         public static Color randomColor()
         {
             return Color.FromArgb(255, rnd.Next(50, 205), rnd.Next(50, 205), rnd.Next(50, 205));
@@ -219,12 +242,15 @@ namespace OpenTk26_3
             }
 
         }
-        public static void FinishedCam(ref camera cam)
+        public static void World_Cam(ref camera cam)
         {
             float radius = 600f * meter;
-            cam.pos.Y = 200f;
             cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*(0.5f)*TotalframeCount); 
             cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*(0.5f)*TotalframeCount);
+            Collision2(landscape, new Vector3(cam.pos.X, -100, cam.pos.Z), out float height, out Vector3 normal);
+            cam.pos.Y = height + 150f;
+
+
             cam.forward = new Vector3(cam.pos.Normalized().X,0, cam.pos.Normalized().Z);
             //Matrix4.LookAt()
             //FreeMouse(ref player);
@@ -275,18 +301,58 @@ namespace OpenTk26_3
 
         }
 
+        public static void ReplayCar(Kart car)
+        {
+            try
+            {
+                string[] inputs = Replay_inputs[TotalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (inputs.Contains("W"))
+                {
+                    car.velocity -= car.getForward() * maxCarAcceleration;
+                }
+                else if (inputs.Contains("S"))
+                {
+                    car.velocity += car.getForward() * maxCarAcceleration;
+                }
 
+                if (inputs.Contains("A"))
+                {
+                    if (car.velocity.Length > .5f)
+                    {
+                        car.angle.Y += car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
+                    }
+                    car.velocity_multi = 0.85f;
+                }
+                else if (inputs.Contains("D"))
+                {
+                    if (car.velocity.Length > .5f)
+                    {
+                        car.angle.Y -= car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
+                    }
+                    car.velocity_multi = 0.85f;
+                }
+                else
+                {
+                    car.velocity_multi = 1;
+                }
+            }
+            catch
+            {
+                
+            }
+        }
         public static void DriveCar(Kart car, KeyboardState input)
         {
-
-
+            record_inputs.Add(" ");
             if (input.IsKeyDown(Key.Up) || input.IsKeyDown(Key.W))
             {
                 car.velocity -= car.getForward() * maxCarAcceleration;
+                record_inputs[TotalframeCount - 1] += "W ";
             }
             else if (input.IsKeyDown(Key.Down) || input.IsKeyDown(Key.S))
             {
                 car.velocity += car.getForward() * maxCarAcceleration;
+                record_inputs[TotalframeCount - 1] += "S ";
             }
 
             if (input.IsKeyDown(Key.Right) || input.IsKeyDown(Key.D))
@@ -296,6 +362,7 @@ namespace OpenTk26_3
                     car.angle.Y -= car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
                 }
                 car.velocity_multi = 0.85f;
+                record_inputs[TotalframeCount - 1] += "D ";
             }
 
             else if (input.IsKeyDown(Key.Left) || input.IsKeyDown(Key.A))
@@ -305,23 +372,17 @@ namespace OpenTk26_3
                     car.angle.Y += car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
                 }
                 car.velocity_multi = 0.85f;
+                record_inputs[TotalframeCount - 1] += "A ";
             }
             else
             {
                 car.velocity_multi = 1;
             }
-            //if (input.IsKeyDown(Key.P))
-            //{
-
-            //    car.angle.Y += 0.02f;
-            //}
-
-
         }
         public void MoveCars(Kart car)
         {
-            tripleCollide(racetrack, car/*, out Vector2 raceAngle,*/ , out float tHeight);
-            tripleCollide(landscape, car/*, out Vector2 grassAngle,*/ , out float lHeight);
+            Collide_With_angle(racetrack, car/*, out Vector2 raceAngle,*/ , out float tHeight);
+            Collide_With_angle(landscape, car/*, out Vector2 grassAngle,*/ , out float lHeight);
             //Collision(racetrack, Kart.Cars[i].centre, out float tHeight);
             //Collision(landscape, Kart.Cars[i].centre, out float lHeight
             car.centre.Y += Gravity * tStep;
@@ -475,39 +536,18 @@ namespace OpenTk26_3
         }
         protected override void OnUnload(EventArgs e)
         {
-            string LeaderADD = "";
             if (Finished)
             {
-                while (true)
-                {
-                    Console.WriteLine("enter your name to save your time, press enter to skip");
-                    LeaderADD = Console.ReadLine();
-
-                    if (LeaderADD.Contains(" "))
-                    {
-                        Console.WriteLine("invalid name, try again");
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                if (LeaderADD.Count() == 0)
-                {
-                }
-                else if (Program.Leaderboard.LeaderBoard_Exist(RandomSeed.ToString()))
-                {
-                    Program.Leaderboard board = new Program.Leaderboard(RandomSeed.ToString());
-                    board.AddValue(LeaderADD, FinishTime);
-                }
-                else
-                {
-                    Program.Leaderboard board = new Program.Leaderboard(LeaderADD, FinishTime, RandomSeed);
-                }
+                Program.setTime(FinishTime);
+                Program.RecordInputs(record_inputs);
+            }
+            else
+            {
+                Program.setTime(0);
             }
             base.OnUnload(e);
             shader.Dispose();
+
         }
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
@@ -530,13 +570,26 @@ namespace OpenTk26_3
 
             if (!Finished)
             {
-                DriveCar(Kart.Cars[0], input);
+                if (Replay)
+                {
+                    ReplayCar(Kart.Cars[0]);
+                }
+                else if (Ghost)
+                {
+                    DriveCar(Kart.Cars[0], input);
+                    ReplayCar(Kart.Cars[1]);
+                }
+                else
+                {
+                    DriveCar(Kart.Cars[0], input);
+                }
                 MoveCars(Kart.Cars[0]);
+
                 StrictFollowCam(ref player, Kart.Cars[0]);
             }
             else
             {
-                FinishedCam(ref player);
+                World_Cam(ref player);
             }
 
             if (input.IsKeyDown(Key.Z))
@@ -546,8 +599,9 @@ namespace OpenTk26_3
 
             if (Kart.Cars[0].Laps == TargetLaps && !Finished)
             {
-                FinishTime = stopwatch.ElapsedMilliseconds / 1000f;
-                Console.WriteLine($"Finished with a time of {FinishTime} seconds!!!");
+                FinishTime = TotalframeCount/30f;
+                float timeTest = Replay ? new Program.Leaderboard(RandomSeed.ToString()).Fastest() : FinishTime;
+                Console.WriteLine($"Finished with a time of {timeTest} seconds!!!");
                 Finished = true;
             }
 
@@ -567,16 +621,35 @@ namespace OpenTk26_3
             }
 
 
-
-            for (int i = 0; i < Item.Items.Count; i++)
+            if ((Ghost) && !Finished)
             {
-                if (Item.Items[i].Collide(Kart.Cars[0]))
+                string[] items = Replay_inputs[TotalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (items.Contains("_B_"))
                 {
-                    Item.Items[i].Consume(Kart.Cars[0]);
-                    i--;
+                    Boost.Consumed(Kart.Cars[1]);
                 }
-
+                if (items.Contains("_G_"))
+                {
+                    Giant.Consumed(Kart.Cars[1]);
+                }
+                if (items.Contains("_S_"))
+                {
+                    Slow.Consumed(Kart.Cars[1]);
+                }
             }
+            else
+            {
+                for (int i = 0; i < Item.Items.Count; i++)
+                {
+                    if (Item.Items[i].Collide(Kart.Cars[0]))
+                    {
+                        Item.Items[i].Consume(Kart.Cars[0]);
+                        i--;
+                    }
+                }
+            }
+
+
         }
 
         public void drawObj(List<Shape> a, Matrix4 proj)
@@ -1225,8 +1298,8 @@ namespace OpenTk26_3
                     //return true;
                     ////
 
-                    tripleCollide(landscape, this.shape, out float gHeight);
-                    tripleCollide(racetrack, this.shape, out float tHeight);
+                    Collide_With_angle(landscape, this.shape, out float gHeight);
+                    Collide_With_angle(racetrack, this.shape, out float tHeight);
                     if (tHeight > gHeight)
                     {
                         shape.centre.Y = shape.dimensions.Y * 2 + tHeight;
@@ -1265,7 +1338,16 @@ namespace OpenTk26_3
             {
                 car.boostDirection = 1;
                 car.boost = (1 * (int)(1 / tStep));
+                if (!Replay)
+                {
+                    record_inputs[TotalframeCount - 1] += "_B_ ";
+                }
                 base.Consume(car);
+            }
+            public static void Consumed(Kart car)
+            {
+                car.boostDirection = 1;
+                car.boost = (1 * (int)(1 / tStep));
             }
             public override bool Collide(Shape shape)
             {
@@ -1288,9 +1370,24 @@ namespace OpenTk26_3
                 {
                     car.boostDirection = -1;
                     car.boost = (1 * (int)(1 / tStep));
+                    if (!Replay)
+                    {
+                        record_inputs[TotalframeCount - 1] += "_S_ ";
+                    }
                     base.Consume(car);
                 }
-                base.Consume(car);
+                else
+                {
+                    base.Consume(car);
+                }
+            }
+            public static void Consumed(Kart car)
+            {
+                if (car.big <= 0)
+                {
+                    car.boostDirection = -1;
+                    car.boost = (1 * (int)(1 / tStep));
+                }
             }
             public override bool Collide(Shape shape)
             {
@@ -1310,7 +1407,15 @@ namespace OpenTk26_3
             public override void Consume(Kart car)
             {
                 car.big = (2 * (int)(1 / tStep));
+                if (!Replay)
+                {
+                    record_inputs[TotalframeCount - 1] += "_G_ ";
+                }
                 base.Consume(car);
+            }
+            public static void Consumed(Kart car)
+            {
+                car.big = (2 * (int)(1 / tStep));
             }
             public override bool Collide(Shape shape)
             {
@@ -1380,7 +1485,7 @@ namespace OpenTk26_3
         }
 
 
-        public static int tripleCollide(Terrain terrain, Shape Shape, out float height)
+        public static int Collide_With_angle(Terrain terrain, Shape Shape, out float height)
         {
             //wrapper function, collide 3 points on the car to find the angle of the terrain and make and average position
             //Shape.GetDimension();
