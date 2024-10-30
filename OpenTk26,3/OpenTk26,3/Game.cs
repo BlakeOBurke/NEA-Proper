@@ -32,52 +32,46 @@ namespace OpenTk26_3
 
     public class Game : GameWindow
     {
+        //self explanatory static variables
 
-        //public static Random rnd = new Random(820368262);
-        public static bool Replay;
-        public static List<string> Replay_inputs;
-        public static List<string> record_inputs = new List<string>();
-        public static bool Ghost;
+        static bool Replay;
+        static List<string> Replay_inputs;
+        static List<string> record_inputs = new List<string>();
+        static bool Ghost;
 
         public static int screenHeight;
         public static int screenWidth;
 
-        public static int RandomSeed;
-        public static Random rnd;
-        static float[] vertices = { };
-        static uint[] indices = { };
-        public int VertexBufferObject;
-        public int ElementBufferObject;
-        public int VertexArrayObject;
-        public static int MOUSEX, MOUSEY;
-        public static int MOUSEscroll = 0;
-        public static bool quickMov = false;
-        public static int frameCount = 0;
-        public static int TotalframeCount = 0;
-        public static int TargetLaps = 2;
-        public static bool Finished = false;
-        public static float FinishTime;
+        static int RandomSeed;
+        static Random rnd;
+        static int MOUSEX, MOUSEY;
+        static int MOUSEscroll = 0;
+        static bool quickMov = false;
+        static int frameCount = 0;
+        static int TotalframeCount;
+        static int TargetLaps = 2;
+        static bool Finished = false;
+        static float FinishTime;
 
-        public static float maxCarAcceleration = .25f * 30;
-        public static float maxCarVelocity = 2f * 30;
+        static float maxCarAcceleration = .25f * 30;
+        static float maxCarVelocity = 2f * 30;
 
-        public const float tStep = 1 / 30f;
-        public const float meter = 0.5f;
-        public const float Gravity = -9.81f * 5;
+        const float tStep = 1 / 30f;
+        const float meter = 0.5f;
+        const float Gravity = -9.81f * 5;
 
-        public const float carScale = .9f;
+        const float carScale = .9f;
 
 
-        public static Game.camera player = new Game.camera(0, 0, 0);
+        static Game.camera player = new Game.camera(0, 0, 0);
 
         Shader shader;
 
-        public static Stopwatch stopwatch = new Stopwatch();
-        float starttime = 0;
+        static Terrain landscape;
+        static Terrain racetrack;
 
-        public static Terrain landscape;
-        public static Terrain racetrack;
 
+        //in the constructors there are many arbitrary re-assignments. this is because some of these are static to the Game class and would persist between games, reseting them fixes this.
         public Game(int width, int height, int seed) : base(width, height, GraphicsMode.Default, "game")
         {
             rnd = new Random(RandomSeed);
@@ -103,18 +97,28 @@ namespace OpenTk26_3
             Shape.shapes.Clear();
             player = new Game.camera(0, 0, 0);
             TotalframeCount = 0;
+
+            //change stuff based on gamemode
             if(mode == "R")
             {
                 Replay = true;
                 Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
+                Ghost = false;
+            }
+            else if(mode == "G")
+            {
+                Ghost = true;
+                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
+                Replay = false;
             }
         }
-        public static Color randomColor()
+        static Color randomColor()
         {
+            //self explanatory
             return Color.FromArgb(255, rnd.Next(50, 205), rnd.Next(50, 205), rnd.Next(50, 205));
         }
         static vertex[] infromFile(string path)
-        {
+        {//unused code to convert .ast 3D files into the program
             string[] infile = File.ReadAllLines(path); ;
             List<vertex> vert = new List<vertex>();
 
@@ -134,7 +138,7 @@ namespace OpenTk26_3
 
         }
 
-        public static void FreeCam(ref camera cam, KeyboardState input)
+        static void FreeCam(ref camera cam, KeyboardState input)
         {
             if (input.IsKeyDown(Key.W))
             {
@@ -201,8 +205,8 @@ namespace OpenTk26_3
             {
                 player.zooooooom += 0.00174533f * 4;
             }
-        }
-        public static void FreeMouse(ref camera cam)
+        } //camera lets you go anywhere, mostly left over from development
+        static void FreeMouse(ref camera cam)
         {
             MouseState moose = Mouse.GetState();
             cam.direction[1] -= (moose.X - MOUSEX) * 0.001f;
@@ -221,9 +225,9 @@ namespace OpenTk26_3
             }
 
 
-        }
+        } //lets you spin the mouse around freely
 
-        public static void FollowCam(ref camera cam, Kart car)
+        static void FollowCam(ref camera cam, Kart car)
         {
             MouseState moose = Mouse.GetState();
             cam.direction[1] -= (moose.X - MOUSEX) * 0.001f;
@@ -241,8 +245,8 @@ namespace OpenTk26_3
                 cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
             }
 
-        }
-        public static void World_Cam(ref camera cam)
+        } //camera follows the car, can't change what way the camera faces
+        static void World_Cam(ref camera cam)
         {
             float radius = 600f * meter;
             cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*(0.5f)*TotalframeCount); 
@@ -254,8 +258,8 @@ namespace OpenTk26_3
             cam.forward = new Vector3(cam.pos.Normalized().X,0, cam.pos.Normalized().Z);
             //Matrix4.LookAt()
             //FreeMouse(ref player);
-        }
-        public static void FreeFollowCam(ref camera cam, Kart car)
+        } //camera maintains alltitude above the ground looking towards the world origin
+        static void FreeFollowCam(ref camera cam, Kart car)
         {
             //cam.pos = car.centre;
 
@@ -276,8 +280,8 @@ namespace OpenTk26_3
                 cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
             }
             cam.pos = car.centre - cam.camforward() * cam.camDistance;
-        }
-        public static void StrictFollowCam(ref camera cam, Kart car)
+        } //camera follows the car but can look in any direction
+        static void LooseFollowCam(ref camera cam, Kart car)
         {
             MouseState moose = Mouse.GetState();
             cam.Ddirection[1] -= (moose.X - MOUSEX) * 0.001f;
@@ -299,9 +303,9 @@ namespace OpenTk26_3
 
             cam.pos = car.centre - cam.camforward() * cam.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
 
-        }
+        } //camera follows the car but the direction of the camera is fixed relative to the car
 
-        public static void ReplayCar(Kart car)
+        static void ReplayCar(Kart car)
         {
             try
             {
@@ -340,8 +344,8 @@ namespace OpenTk26_3
             {
                 
             }
-        }
-        public static void DriveCar(Kart car, KeyboardState input)
+        } //similar to DriveCar but uses text file of replay as a substitute for keyboard input
+        static void DriveCar(Kart car, KeyboardState input)
         {
             record_inputs.Add(" ");
             if (input.IsKeyDown(Key.Up) || input.IsKeyDown(Key.W))
@@ -378,18 +382,24 @@ namespace OpenTk26_3
             {
                 car.velocity_multi = 1;
             }
-        }
-        public void MoveCars(Kart car)
+        } //affects the cars velocity based on keyboard inputs
+        void MoveCars(Kart car, bool IsGhost) //terrain collision + checkpoint + speed modifiers + actually moving the car 
         {
+            //get the height of the racectrack and the landscape
+            //get the angle from the landscape
+            //based on what height is higher the car is either on or off the grass
+            //(2x 128*128 grids of squares. based on the track that's generated by wave function collapse the areas of the 'track' grid are 'pulled up' through the 'landscape' grid so the method to determine on track or not works)
             Collide_With_angle(racetrack, car/*, out Vector2 raceAngle,*/ , out float tHeight);
             Collide_With_angle(landscape, car/*, out Vector2 grassAngle,*/ , out float lHeight);
-            //Collision(racetrack, Kart.Cars[i].centre, out float tHeight);
-            //Collision(landscape, Kart.Cars[i].centre, out float lHeight
+
+            //do some gravity yeah
             car.centre.Y += Gravity * tStep;
+
             if (tHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y || lHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y)
             {
                 car.centre.Y = (float)Math.Max(lHeight, tHeight) + car.dimensions.Y / 2f;
             }
+            //actual ongrass check, this will affect speed later
             if (lHeight > tHeight)
             {
                 car.onGrass = true;
@@ -401,41 +411,49 @@ namespace OpenTk26_3
                 Vector2 carPos = car.centre.Zx;
                 Vector2 Checkpos = terrain2World(racetrack.checkpointPos);
                 Vector2 Startpos = terrain2World(racetrack.startPos);
-                //fix the startpos and checkpoint pos to align them to world grid
-
                 Checkpos = Checkpos.Yx;
                 Startpos = Startpos.Yx;
+                //fix the startpos and checkpoint pos to align them to world grid
+
 
                 //check some funky dot products to see if the car is in a square of the checkpoint or start
-                if (Vector2.Dot(carPos - (Checkpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Checkpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
+                //^generate vectors from opposite corners of a square to a point (the cars location). if those vectors point 'towards' each other the point is in the square. if two vectors point towards each other the dot product is < 1.
+                //(not proving the maths so please just trust me bro)
+                if (!IsGhost) //the ghost will not be able to activate checkpoints
                 {
-                    if (car.checkState == 'S')
+                    if (Vector2.Dot(carPos - (Checkpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Checkpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
                     {
-                        Console.WriteLine("hit checkpoint");
-                        car.checkState = 'C';
+                        if (car.checkState == 'S')
+                        {
+                            Console.WriteLine("hit checkpoint");
+                            car.checkState = 'C';
+                        }
+                    }
+                    if (Vector2.Dot(carPos - (Startpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Startpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
+                    {
+                        if (car.checkState == 'C')
+                        {
+                            car.Laps++;
+                            Console.WriteLine(car.Laps + "/" + TargetLaps);
+                            car.checkState = 'S';
+                        }
                     }
                 }
-                if (Vector2.Dot(carPos - (Startpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Startpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
-                {
-                    if (car.checkState == 'C')
-                    {
-                        car.Laps++;
-                        Console.WriteLine(car.Laps + "/" + TargetLaps);
-                        car.checkState = 'S';
-                    }
-                }
+
             }
 
+            //car slows down over time, basically this is friction
             car.velocity *= 0.95f;
 
             float velocity_multi = car.velocity_multi;
 
+            //if car on grass AND not being affected by a boost or giant item then slow down
             if (car.onGrass == true && car.big <= 0 && (car.boost <= 0 || car.boostDirection == -1))
             {
                 velocity_multi *= 0.35f;
             }   
 
-
+            //speed up and reduce FOV(zoom in) if speed powerupp, regular speed and FOV without 
             if (car.boost > 0)
             {
                 if (car.boostDirection == 1)
@@ -457,14 +475,16 @@ namespace OpenTk26_3
                 car.boostDirection = 0;
             }
 
-
+            //cap its velocity
             if (car.velocity.Length > maxCarVelocity)
             {
                 car.velocity = car.velocity.Normalized() * maxCarVelocity;
             }
 
+            //setpos adds the vector to the cars position, this moves it
             car.SetPos(car.velocity * tStep * velocity_multi);
 
+            //BIG BOI (scale is self explanatory)
             if (car.big > 0 && !car.bigged)
             {
                 car.Scale(3);
@@ -479,30 +499,20 @@ namespace OpenTk26_3
             {
                 car.big--;
             }
-
-            //Console.WriteLine(Kart.Cars[i].velocity.Length);
-
-            //car.angle.Y = (float)Math.Atan2(car.velocity.X, car.velocity.Z);
-
-            //Kart.Cars[i].angle.X = grassAngle.X;
-            //Kart.Cars[i].angle.Z = grassAngle.Y;
-            //Kart.Cars[i].angle.Y = (float)Math.Atan2(Kart.Cars[i].velocity.X, Kart.Cars[i].velocity.Z);
         }
 
+        //built in OpenTK virtual function, run immediately
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
 
-            GL.ClearColor(Color.CornflowerBlue);
-
-            stopwatch = Stopwatch.StartNew();
-
+            GL.ClearColor(Color.CornflowerBlue);//background colour
 
             shader = new Shader("shader.vert.txt", "shader.frag.txt");
 
 
-            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.DepthTest);//needed to make 3D
 
             MOUSEX = 0; MOUSEY = 0;
 
@@ -510,6 +520,12 @@ namespace OpenTk26_3
             Kart.Cars.Last().Scale(carScale);
             Kart.Cars.Last().SetPos(new Vector3(0, 40, 0));
 
+            if (Ghost)
+            {//in ghost mode a second car is needed, the cars and all shapes use OOP so this is simple
+                Kart.Cars.Add(new Kart(randomColor()));
+                Kart.Cars.Last().Scale(carScale);
+                Kart.Cars.Last().SetPos(new Vector3(0, 40, 0));
+            }
 
             //starts the random seed for the terrain stuff, user will be promted to enter one
             Terrain.getRan();
@@ -521,10 +537,11 @@ namespace OpenTk26_3
             racetrack.terrain.SetPos(racetrack.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
 
             Vector2 pos = terrain2World(racetrack.startPos);
-            Kart.Cars.Last().SetPos(new Vector3(pos.X, 0, pos.Y));
-
-            //landscape.terrain.SetPos(-landscape.terrain.avgPos());
-            //racetrack.terrain.SetPos(-landscape.terrain.avgPos());
+            if (Ghost)
+            {
+                Kart.Cars[1].SetPos(new Vector3(pos.X, 0, pos.Y));
+            }
+            Kart.Cars[0].SetPos(new Vector3(pos.X, 0, pos.Y));
 
             //some global/ classglobal variables appear to persist between games, reseting randoms fixes this
 
@@ -534,6 +551,8 @@ namespace OpenTk26_3
                 Item.SpawnItem();
             }
         }
+
+        //built in OpenTK virtual function, run when the window is closed. if the track has been finished then the time and recorded inputs are sent to Program.cs to be saved in a leaderboard, if not a time of 0 is given which is caught in Program.cs
         protected override void OnUnload(EventArgs e)
         {
             if (Finished)
@@ -549,27 +568,31 @@ namespace OpenTk26_3
             shader.Dispose();
 
         }
+
+        //built in OpenTK virtual function, run 30 times per second
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             //Console.WriteLine(Kart.Cars[0].centre.X + "   " + Kart.Cars[0].centre.Z);
             base.OnUpdateFrame(e);
+
             TotalframeCount++;
             frameCount++;
             frameCount = frameCount % 360;
 
+            //OpenTK function to get keyboard input without needing threading or similar
             KeyboardState input = Keyboard.GetState();
 
             if (input.IsKeyDown(Key.Escape))
             {
                 Exit();
             }
-            if (input.IsKeyDown(Key.Space))
-            {
-                Finished = true;
-            }
 
             if (!Finished)
             {
+                //in replay mode, use replay car to undo the replay file
+                //in ghost mode, let the player drive the first car [0] and use the replay for the second car [1]
+                //otherwise just let the player control the car 
+                //finally set the camera to follow car[0]
                 if (Replay)
                 {
                     ReplayCar(Kart.Cars[0]);
@@ -578,25 +601,24 @@ namespace OpenTk26_3
                 {
                     DriveCar(Kart.Cars[0], input);
                     ReplayCar(Kart.Cars[1]);
+
+                    MoveCars(Kart.Cars[1], true);
                 }
                 else
                 {
                     DriveCar(Kart.Cars[0], input);
                 }
-                MoveCars(Kart.Cars[0]);
+                MoveCars(Kart.Cars[0], false);
 
-                StrictFollowCam(ref player, Kart.Cars[0]);
+                LooseFollowCam(ref player, Kart.Cars[0]);
             }
             else
             {
+                //if its finished then use the world camera to see the whole course from above
                 World_Cam(ref player);
             }
 
-            if (input.IsKeyDown(Key.Z))
-            {
-                Item.SpawnItem();
-            }
-
+            //check if the first car is finished
             if (Kart.Cars[0].Laps == TargetLaps && !Finished)
             {
                 FinishTime = TotalframeCount/30f;
@@ -605,123 +627,77 @@ namespace OpenTk26_3
                 Finished = true;
             }
 
-
-            if (input.IsKeyDown(Key.Y))
-            {
-                Terrain.getRan();
-
-                landscape = new Terrain();
-                racetrack = new Terrain("circle");
-
-                landscape.terrain.SetPos(landscape.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
-                racetrack.terrain.SetPos(racetrack.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
-
-                Vector2 pos = terrain2World(racetrack.startPos);
-                Kart.Cars.Last().SetPos(new Vector3(pos.X, 0, pos.Y));
-            }
-
-
+            //in replays and standard mode the items are used are after they are used. in ghost mode, the ghost car does not use up items becuase that would affect the main players gameplay
             if ((Ghost) && !Finished)
             {
-                string[] items = Replay_inputs[TotalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (items.Contains("_B_"))
+                try//catches the index out of range exception from the ghost car finishing before the player and so trying to get instructions when there aren't any
                 {
-                    Boost.Consumed(Kart.Cars[1]);
-                }
-                if (items.Contains("_G_"))
-                {
-                    Giant.Consumed(Kart.Cars[1]);
-                }
-                if (items.Contains("_S_"))
-                {
-                    Slow.Consumed(Kart.Cars[1]);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < Item.Items.Count; i++)
-                {
-                    if (Item.Items[i].Collide(Kart.Cars[0]))
+                    string[] items = Replay_inputs[TotalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (items.Contains("_B_"))
                     {
-                        Item.Items[i].Consume(Kart.Cars[0]);
-                        i--;
+                        Boost.Consumed(Kart.Cars[1]);
                     }
+                    if (items.Contains("_G_"))
+                    {
+                        Giant.Consumed(Kart.Cars[1]);
+                    }
+                    if (items.Contains("_S_"))
+                    {
+                        Slow.Consumed(Kart.Cars[1]);
+                    }
+                }
+                catch { }
+
+            }
+            for (int i = 0; i < Item.Items.Count; i++)
+            {
+                if (Item.Items[i].Collide(Kart.Cars[0]))
+                {
+                    Item.Items[i].Consume(Kart.Cars[0]);
+                    i--;
                 }
             }
 
 
         }
 
-        public void drawObj(List<Shape> a, Matrix4 proj)
-        {
+        void drawObj(List<Shape> a, Matrix4 proj)
+        {//proj is the projection matrix, the same for all objects
             for (int i = 0; i < a.Count(); i++)
             {
                 Matrix4 model = a[i].modelMat();
+                //get the model matrix
 
-                //GL.BindVertexArray(VertexArrayObject);
-
-                //starttime = time;
-
-                //GL.Uniform1(location:(proj), 1);
                 Matrix4 aproj = Matrix4.CreateScale(a[i].scale) * model * proj;
+                //using matrix multiplication to apply the transformations
 
                 int uniID = GL.GetUniformLocation(3, "projection");
 
-
+                //Give the matrix to the GPU
                 GL.UniformMatrix4(uniID, true, ref aproj);
 
-                //vertices = a[i].GetFloat();
-                //indices = a[i].triangle;
 
 
-                //GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
-                //GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
-
-
-                //GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                //GL.EnableVertexAttribArray(0);
-
-
-                //GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                //GL.EnableVertexAttribArray(1);
-
-
-
-                //GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
-                //GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
-
+                //instruct the GPU on what data to draw
                 GL.BindVertexArray(a[i].VertexArrayObject);
-
 
                 GL.BindBuffer(BufferTarget.ArrayBuffer, a[i].VertexBufferObject);
                 GL.BindBuffer(BufferTarget.ElementArrayBuffer, a[i].ElementBufferObject);
 
-
+                //defines how data is sent to the GPU, 6* 32 bit numbers, a 3*32 bits for colour, 3*32 bits for location
                 GL.VertexAttribPointer(a[i].VertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
                 GL.EnableVertexAttribArray(a[i].VertexBufferObject);
-
 
                 GL.VertexAttribPointer(a[i].ElementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
                 GL.EnableVertexAttribArray(a[i].ElementBufferObject);
 
-
-
-
+                //gpu things
                 shader.Use();
-
-
-
                 GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
-
-
-
-                //GL.EnableVertexAttribArray(a.VBO);
-
-
-
             }
-        }
+        } //draw stuff
 
+        //built in OpenTK virtual function, run 30 times per second
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -733,36 +709,35 @@ namespace OpenTk26_3
             models.Add(landscape.terrain);
             models.Add(racetrack.terrain);
             foreach (Item item in Item.Items)
-            {
+            {//make the items bob up and down and spin for visual splendor 
                 item.shape.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
                 //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
                 item.shape.angle += 0.0174533f * item.rotateOffset;
 
                 models.Add(item.shape);
             }
-            //models.Add(water.terrain);
-            //models.AddRange(A.pieces);
             models.AddRange(Kart.Cars);
 
+            //draw every shape, OOP helps as terrain and item and kart inherit from shape so can be added to <models>, its not very slow because its only adding object references to the range
             drawObj(models, pro(player));
-            //drawTerrain(A, 1, pro(player));
 
-
-            //Console.WriteLine(Shape.shapes.Sum() + " " + Shape.Models.Count());
-            //Console.WriteLine(player.pos.X + "  " +player.pos.Y + "  "+ player.pos.Z);
-
+            //reset the shader
             shader.Dispose();
 
             this.SwapBuffers();
 
         }
+
+        ////built in OpenTK virtual function, run whenever the screen is resized so that the game doesnt crash and draws to the new dimensions
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
 
             GL.Viewport(0, 0, this.Width, this.Height);
         }
-        public class vertex
+
+
+        public struct vertex // bit self expanatory
         {
             public Vector3 pos;
             public Color color;
@@ -784,7 +759,7 @@ namespace OpenTk26_3
             }
 
         }
-        public class camera
+        public class camera // camera to get matrices for 3D 
         {
             //distance from car to camera in follow modes
             public float camDistance = 25;
@@ -806,7 +781,7 @@ namespace OpenTk26_3
                 forward = new Vector3(0, 0, 1);
             }
 
-            public Vector3 camforward()
+            public Vector3 camforward() // the direction the camera is pointing, changing direction and forward affect this
             {
                 Matrix4 rotation = Matrix4.CreateRotationZ(-direction[2]) * Matrix4.CreateRotationY(-direction[1]) * Matrix4.CreateRotationX(-direction[0]);
                 Vector4 ouut = (rotation * new Vector4(forward, 1));
@@ -826,7 +801,7 @@ namespace OpenTk26_3
             }
         }
 
-        public static Matrix4 pro(camera cam)
+        public static Matrix4 pro(camera cam) // the projection matrix, if the game is over its slightly different as it looks to the centre of the world
         {
             if (Finished == true)
             {
@@ -867,6 +842,9 @@ namespace OpenTk26_3
             camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
             return camer;
         }
+
+        //a shader is just a function for the gpu to be run in parralel
+        //my program has a vertex shader for every vertex and a fragment shader for every pixel
         public class Shader
         {
             int Handle;
@@ -959,15 +937,15 @@ namespace OpenTk26_3
             }
         }
 
-        public static Vector2 terrain2World(Vector2 pos)
+        static Vector2 terrain2World(Vector2 pos)
         {
             pos = pos * Terrain.squareSize; //+ new Vector2(128, 128);
             //Console.WriteLine(pos.X + "  " + pos.Y);
 
             return pos;
-        }
+        } //takes the wave function collapse track info into the 3D space
 
-        public class Shape
+        class Shape // Shape, many functions. Buffers are RAM on the GPU for storing triangles
         {
             public Vector3 angle;
             public int count;
@@ -1222,7 +1200,7 @@ namespace OpenTk26_3
             }
         }
 
-        public class Item
+        abstract class Item // items to modify gameplay
         {
             public static Random itemRand;
             public int frameOffset;
@@ -1328,7 +1306,7 @@ namespace OpenTk26_3
             }
         }
 
-        public class Boost : Item
+        class Boost /*ZOOOOOOOOM*/ : Item
         {
             public Boost(string a = "Cube.obj") : base(a, Color.DarkRed)
             {
@@ -1358,7 +1336,7 @@ namespace OpenTk26_3
                 return false;
             }
         }
-        public class Slow : Item
+        class Slow /*not ZOOOOOOOOM*/ : Item
         {
             public Slow(string a = "Cube.obj") : base(a, Color.DarkMagenta)
             {
@@ -1398,7 +1376,7 @@ namespace OpenTk26_3
                 return false;
             }
         }
-        public class Giant : Item
+        class Giant /*LAAAAAAARRGE*/ : Item
         {
             public Giant(string a = "Cube.obj") : base(a, Color.LightCyan)
             {
@@ -1426,7 +1404,7 @@ namespace OpenTk26_3
                 return false;
             }
         }
-        public class NonItem : Item
+        class NonItem /*not Implemented*/ : Item
         {
             public NonItem(string a = "Cube.obj") : base(a, randomColor())
             {
@@ -1445,7 +1423,7 @@ namespace OpenTk26_3
                 return false;
             }
         }
-        public class Kart : Shape
+        class Kart /*Kachow*/ : Shape 
         {
             public int big = 0;
             public bool bigged = false;
@@ -1467,7 +1445,7 @@ namespace OpenTk26_3
                 base.Scale(scale);
                 GetDimension();
             }
-            public override Matrix4 modelMat()
+            public override Matrix4 modelMat() // different modelmatrix to make the car collide with terrain properly
             {
                 Vector3 up = this.normal.Normalized();
                 Vector3 right = Vector3.Cross(up, this.getForward()).Normalized();
@@ -1485,33 +1463,16 @@ namespace OpenTk26_3
         }
 
 
-        public static int Collide_With_angle(Terrain terrain, Shape Shape, out float height)
+        static void Collide_With_angle(Terrain terrain, Shape Shape, out float height)
         {
-            //wrapper function, collide 3 points on the car to find the angle of the terrain and make and average position
-            //Shape.GetDimension();
-            //Collision(terrain, Shape.centre + new Vector3(0, 0, Shape.dimensions.Z / 2), out float height1);
-            //Collision(terrain, Shape.centre + new Vector3(-Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height2);
-            //Collision(terrain, Shape.centre + new Vector3(+Shape.dimensions.X / 2, 0, -Shape.dimensions.Z / 2), out float height3);
 
             Collision2(terrain, Shape.centre, out float height1, out Vector3 normal);
-            //Vector3 outter = Vector3.Cross(Shape.getForward(), normal);
-            // 1
-            //2 3
+
             height = height1;
 
             Shape.normal = normal.Normalized();
-            ////height = (height1 + height2 + height3) / 3f;
-
-            ////angle = new Vector2(0,0);
-            //pitch and roll only needed, yaw based on the movement
-            //angle.X = (float)Math.Asin((- height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
-            //angle.Y = (float)Math.Asin((height3-height2)/Shape.dimensions.X);            
-            ////angle.X = (float)Math.Asin((-height1 + (height2 + height3) / 2)/Shape.dimensions.Z);
-            ////angle.Y = (float)Math.Asin((height3-height2)/Shape.dimensions.X);
-            return 0;
-
         }
-        public static float[] barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 position)
+        static float[] barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 position)
         {
             //since the terrain is scaled, it needs to be resized
             A *= Terrain.squareSize;
@@ -1528,7 +1489,7 @@ namespace OpenTk26_3
 
             return barycentrics;
         }
-        public int Collision(Terrain terrain, Vector3 B, out float Height)
+        int Collision(Terrain terrain, Vector3 B, out float Height)
         {
             //return 0 if above the terrain
             //1 if under the track
@@ -1598,13 +1559,8 @@ namespace OpenTk26_3
             //Console.WriteLine(Height);
             return 0;
         }
-        public static int Collision2(Terrain terrain, Vector3 B, out float Height, out Vector3 normal)
+        static void Collision2(Terrain terrain, Vector3 B, out float Height, out Vector3 normal)
         {
-            //return 0 if above the terrain
-            //1 if under the track
-            //2 if under the other terrain
-            //move up / slow down car accordingly
-
             //matrix method for barycentric coordinates, formulas from wikipedia
 
             //get square on grid for 
@@ -1620,7 +1576,7 @@ namespace OpenTk26_3
             //^2 pieces
             //centres at 0,0
 
-            //each terrain piece is 5 long or 10 of the 0.5 meters 
+            //each terrain piece is 5 long
             //add (gridDimension/2) to the shapes centre then divide by 5 and it will be in relative terrain world with each corner of a terrain piece being easily indedxable from the array 
             //check if outside the range (0,0) to (gridDimension, gridDimension)
 
@@ -1639,8 +1595,8 @@ namespace OpenTk26_3
             if (X_ < 0 || Z_ < 0 || X_ > Terrain.gridDimension - 2 || Z_ > Terrain.gridDimension - 2)
             {
                 Height = 0;
-                normal = new Vector3(0, 0, 0);
-                return -1;
+                normal = new Vector3(0, 1, 0);
+                return;
             }
 
             //decide bottom right or top left triangle
@@ -1686,11 +1642,9 @@ namespace OpenTk26_3
             Height = c[0].Y * barry[0] + c[1].Y * barry[1] + c[2].Y * barry[2];
             Height *= Terrain.squareSize;
             //Console.WriteLine(Height);
-
-            return 0;
         }
 
-        public class Terrain
+        class Terrain
         {
 
             public static Random rand;

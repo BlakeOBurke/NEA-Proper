@@ -1,4 +1,0 @@
-Blake4 49.951
-Blake3 50.497
-Blake 52.856
-Blake2 55.846

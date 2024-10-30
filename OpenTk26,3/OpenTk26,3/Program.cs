@@ -54,6 +54,21 @@ namespace OpenTk26_3
                         SetLeader(SEED, FinishedTime);
 
                         break;
+                    case 'G':
+                        //user must enter a seed for ghost mode because a replay must exist for that seed
+                        Console.WriteLine("enter a seed, press enter to return to menu");
+                        if (int.TryParse(Console.ReadLine(), out seed))
+                        {
+                            SEED = seed;
+                            Game ga = new Game(1200, 900, SEED, "G");
+                            ga.Run(30, 30);
+                            ga.Dispose();
+                            Console.WriteLine($"your seed was {SEED}");
+                            SetLeader(SEED, FinishedTime);
+                        }
+
+
+                        break;
                     case 'L':
                         string choice;
                         while (true)
@@ -80,9 +95,9 @@ namespace OpenTk26_3
                         break;
                     case 'R':
                         Console.WriteLine("enter a seed, press enter for a new course");
-                        if (int.TryParse(Console.ReadLine(), out int Seed))
+                        if (int.TryParse(Console.ReadLine(), out seed))
                         {
-                            SEED = Seed;
+                            SEED = seed;
                             Game ga = new Game(1200, 900, SEED, "R");
                             ga.Run(30, 30);
                             ga.Dispose();
@@ -132,8 +147,14 @@ namespace OpenTk26_3
                     Program.Leaderboard board = new Program.Leaderboard(LeaderADD, finishTime, seed);
                 }
                 Leaderboard CheckForReplay = new Program.Leaderboard(seed.ToString());
+                CheckForReplay.SaveBoard();
                 if (CheckForReplay.Fastest() == finishTime)
                 {
+                    try
+                    {
+                        File.Delete(seed.ToString());
+                    }
+                    catch { }
                     File.WriteAllLines(seed.ToString(), Inputs);
                 }
             }
@@ -304,9 +325,10 @@ namespace OpenTk26_3
             Console.WriteLine("Play Game 'P'");
             Console.WriteLine("View Leaderboard 'L'");
             Console.WriteLine("PLACEHOLDER 'AHHH'");
+            Console.WriteLine("Ghost Mode 'G'");
             Console.WriteLine("Replay 'R'");
             Console.WriteLine("Exit 'X'");
-            return choiceMaker("PLRX");
+            return choiceMaker("PLGRX");
         } 
 
 
