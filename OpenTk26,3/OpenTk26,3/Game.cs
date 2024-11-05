@@ -251,7 +251,7 @@ namespace OpenTk26_3
             float radius = 600f * meter;
             cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*(0.5f)*TotalframeCount); 
             cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*(0.5f)*TotalframeCount);
-            Collision2(landscape, new Vector3(cam.pos.X, -100, cam.pos.Z), out float height, out Vector3 normal);
+            Collision(landscape, new Vector3(cam.pos.X, -100, cam.pos.Z), out float height, out Vector3 normal);
             cam.pos.Y = height + 150f;
 
 
@@ -657,7 +657,8 @@ namespace OpenTk26_3
                     i--;
                 }
             }
-
+            Console.WriteLine(player.pos.X);
+            Console.WriteLine(player.pos.Z);
 
         }
 
@@ -787,6 +788,7 @@ namespace OpenTk26_3
                 Vector4 ouut = (rotation * new Vector4(forward, 1));
                 return new Vector3(ouut);
             }
+            //these three change FOV based on the speed and slow powerups
             public void ZoomFast()
             {
                 zooooooom = (float)(0.0174533 * 55);
@@ -845,7 +847,7 @@ namespace OpenTk26_3
 
         //a shader is just a function for the gpu to be run in parralel
         //my program has a vertex shader for every vertex and a fragment shader for every pixel
-        public class Shader
+        public class Shader //shader stuff, using OpenTK tutorial because it has to be quite exact
         {
             int Handle;
 
@@ -954,7 +956,6 @@ namespace OpenTk26_3
             public Vector3 direction = new Vector3(0, 0, 1);
             public Vector3 scale = new Vector3(1, 1, 1);
             public Vector3 velocity;
-            public Vector3 acceleration;
             public Vector3 normal;
 
             public Vector3 centre;
@@ -1466,13 +1467,14 @@ namespace OpenTk26_3
         static void Collide_With_angle(Terrain terrain, Shape Shape, out float height)
         {
 
-            Collision2(terrain, Shape.centre, out float height1, out Vector3 normal);
+            Collision(terrain, Shape.centre, out float height1, out Vector3 normal);
 
             height = height1;
 
             Shape.normal = normal.Normalized();
         }
-        static float[] barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 position)
+        
+        static float[] barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 position)//gets the barycentric coordinates of a point on a triangle for use in the smooth terrain collision
         {
             //since the terrain is scaled, it needs to be resized
             A *= Terrain.squareSize;
@@ -1489,77 +1491,7 @@ namespace OpenTk26_3
 
             return barycentrics;
         }
-        int Collision(Terrain terrain, Vector3 B, out float Height)
-        {
-            //return 0 if above the terrain
-            //1 if under the track
-            //2 if under the other terrain
-            //move up / slow down car accordingly
-
-            //matrix method for barycentric coordinates, formulas from wikipedia
-
-            //get square on grid for 
-
-            //square
-            //32
-            //10
-
-            //convert shape coordinates to one square on the terrain
-
-            //terrain has 
-            //Terrain.gridDimension
-            //^2 pieces
-            //centres at 0,0
-
-            //each terrain piece is 5 long or 10 of the 0.5 meters 
-            //add (gridDimension/2) to the shapes centre then divide by 5 and it will be in relative terrain world with each corner of a terrain piece being easily indedxable from the array 
-            //check if outside the range (0,0) to (gridDimension, gridDimension)
-
-            float X = B.X / Terrain.squareSize + (Terrain.gridDimension / 2);
-            float Z = B.Z / Terrain.squareSize + (Terrain.gridDimension / 2);
-
-            int X_ = (int)Math.Floor(X);
-            int Z_ = (int)Math.Floor(Z);
-
-            //terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].color = Color.Red;
-            //terrain.terrain.verts[(X_+1) * Terrain.gridDimension + Z_].color = Color.Red;
-            //terrain.terrain.verts[X_ * Terrain.gridDimension + Z_+1].color = Color.Red;
-            //terrain.terrain.verts[(X_+1) * Terrain.gridDimension + Z_+1].color = Color.Red;
-            ////terrain.terrain.resetBuffers();
-
-            if (X_ < 0 || Z_ < 0 || X_ > Terrain.gridDimension - 2 || Z_ > Terrain.gridDimension - 2)
-            {
-                Height = 0;
-                return -1;
-            }
-
-            //decide bottom right or top left triangle
-            //corners
-            Vector3[] c = new Vector3[3];
-            float[] barry = new float[3];
-            if (X < Z)
-            {
-                //bottom right
-                c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
-                c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
-                c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
-                barry = barycentric(terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
-            }
-            else
-            {
-                //top left
-                c[0] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
-                c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
-                c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
-                barry = barycentric(terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
-            }
-
-            Height = c[0].Y * barry[0] + c[1].Y * barry[1] + c[2].Y * barry[2];
-            Height *= Terrain.squareSize;
-            //Console.WriteLine(Height);
-            return 0;
-        }
-        static void Collision2(Terrain terrain, Vector3 B, out float Height, out Vector3 normal)
+        static void Collision(Terrain terrain, Vector3 B, out float Height, out Vector3 normal) //gets height and normal vector of terrain area that the car/ object is currently in
         {
             //matrix method for barycentric coordinates, formulas from wikipedia
 
@@ -1612,7 +1544,7 @@ namespace OpenTk26_3
 
                 c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
                 c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + (Z_ + 1)].pos;
-                c[1] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
+                c[1] = terrain.terrain.verts[X_ * Terrain.gridDimension + (Z_ + 1)].pos;
 
                 //c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
                 //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
@@ -1627,7 +1559,7 @@ namespace OpenTk26_3
                 //c[0] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
                 //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
                 //c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
-                c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
+                c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + (Z_ + 1)].pos;
                 c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
                 c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
 
@@ -1644,7 +1576,7 @@ namespace OpenTk26_3
             //Console.WriteLine(Height);
         }
 
-        class Terrain
+        class Terrain //perlin noise and terrain stuff
         {
 
             public static Random rand;
@@ -1661,14 +1593,14 @@ namespace OpenTk26_3
             Color LandColor = Color.Green;
             Color TrackColor = Color.Black;
             string path = "128_good.obj";
-            public static void getRan()
+            public static void getRan() //moves some distance away for the perlin noise
             {
                 rand = new Random(RandomSeed);
                 offset = new Vector2(rand.Next(0, 1000), rand.Next(0, 1000));
             }
 
 
-            public Terrain()
+            public Terrain() //terrain for landscape
             {
 
                 heights = Perlin.DoPerlin(heights, offset.X, offset.Y, 4);
@@ -1699,7 +1631,7 @@ namespace OpenTk26_3
 
                 terrain.resetBuffers();
             }
-            public Terrain(string shape)
+            public Terrain(string shape) //terrain for track, uses wavefunctioncollapse
             {
                 heights = Perlin.DoPerlin(heights, offset.X, offset.Y, 4);
                 List<float> temporary = new List<float>();
@@ -1729,6 +1661,7 @@ namespace OpenTk26_3
                 }
 
                 WaveFunctionCollapse[,] track = new WaveFunctionCollapse[trackSize, trackSize];
+                //start position and checkpoint position
                 Vector2 StartTile = new Vector2(0, 0);
                 Vector2 CheckTile = new Vector2(0, 0);
                 WaveFunctionCollapse.GenerateTrack(ref track, ref StartTile, ref CheckTile);
@@ -1790,7 +1723,7 @@ namespace OpenTk26_3
                         }
                         else
                         {
-                            terrain.verts[gridDimension * i + j].pos.Y -= 2f;
+                            terrain.verts[gridDimension * i + j].pos.Y -= .5f;
                         }
                         //colours the start tile differently
                         if (new Vector2(x, y) == StartTile || new Vector2(x, y) == CheckTile)
@@ -1804,7 +1737,7 @@ namespace OpenTk26_3
                 }
 
             }
-            public class WaveFunctionCollapse
+            public class WaveFunctionCollapse // wave function collapse algorithm, ask me to explain cause otherwise it'd be several paragraphs
             {
                 public int x;
                 public int y;
@@ -2271,7 +2204,7 @@ namespace OpenTk26_3
 
                 }
             }
-            public class Perlin
+            public class Perlin //same as wave function collapse
             {
                 public static float[,] DoPerlin(float[,] c, float Ox, float Oy, int levels)
                 {
@@ -2285,6 +2218,7 @@ namespace OpenTk26_3
 
                             a[i, j] = SampleNoise(x, y, 1, 1, levels, 0.5f, 2f);
                             //a[i, j] = (float)Math.Pow(a[i, j], 1.3f);
+                            //function that manipulates the output to make it nicer
                             a[i, j] = (float)Math.Pow(Math.E, a[i, j]);
 
                         }

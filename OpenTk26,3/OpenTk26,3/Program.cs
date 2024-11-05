@@ -228,15 +228,19 @@ namespace OpenTk26_3
                 bool swapped;
                 for (int i = board.Count(); i > 0; i--)
                 {
+                    swapped = false;
                     for (int j = 0; j < i - 1; j++)
                     {
-                        swapped = false;
                         if (board[j].time > board[j + 1].time)
                         {
                             Leaderboard_entry temp = board[j + 1].Clone();
                             board[j + 1] = board[j].Clone();
                             board[j] = temp.Clone();
                             swapped = true;
+                        }
+                        if (!swapped)
+                        {
+                            break;
                         }
                     }
 

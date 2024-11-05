@@ -1,3 +1,4 @@
+Blake 41.26667
 Blake3 42.16667
 Blake 43.4
 Blake2 44.56667
