@@ -56,9 +56,31 @@ namespace OpenTk26_3
         //in the constructors there are many arbitrary re-assignments. this is because some of these are static to the Game class and would persist between games, reseting them fixes this.
         public Game(int width, int height, int seed) : base(width, height, GraphicsMode.Default, "game")
         {
-            if(seed % 2 == 0)
+            reset_statics(width,height,seed);
+        }
+        public Game(int width, int height, int seed, string mode) : base(width, height, GraphicsMode.Default, "game")
+        {
+            reset_statics(width , height,seed);
+
+            //change stuff based on gamemode
+            if(mode == "R")
+            {
+                Replay = true;
+                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
+                Ghost = false;
+            }
+            else if(mode == "G")
+            {
+                Ghost = true;
+                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
+                Replay = false;
+            }
+        }
+        void reset_statics(int width, int height, int seed)//stuff that needs to be static to the game class but also needs to be reset between each game
+        {
+            if (seed % 2 == 0)
             {//grass
-                Terrain.LandColor = Color.FromArgb(0,0,180,0);
+                Terrain.LandColor = Color.FromArgb(0, 0, 180, 0);
                 Terrain.TrackColor = Color.DarkGreen;
             }
             else
@@ -80,51 +102,16 @@ namespace OpenTk26_3
             player = new Game.camera(0, 0, 0);
             TotalframeCount = 0;
             record_inputs.Clear();
-            Replay_inputs.Clear();
-        }
-        public Game(int width, int height, int seed, string mode) : base(width, height, GraphicsMode.Default, "game")
-        {
-            if (seed % 2 == 0)
-            {//grass
-                Terrain.LandColor = Color.FromArgb(0,0,180,0);                
-                Terrain.TrackColor = Color.DarkGreen;
-            }
-            else
-            {//sand
-                Terrain.LandColor = Color.SandyBrown;
-                Terrain.TrackColor = Color.Black;
-            }
-            RandomSeed = seed;
-            rnd = new Random(RandomSeed);
-            Item.itemRand = new Random(RandomSeed);
-            Decoration.decorRand = new Random(RandomSeed);
-
-            screenHeight = height;
-            screenWidth = width;
-            Finished = false;
-            Item.Items.Clear();
-            Kart.Cars.Clear();
-            Shape.shapes.Clear();
-            player = new Game.camera(0, 0, 0);
-            TotalframeCount = 0;
-
-            //change stuff based on gamemode
-            if(mode == "R")
+            if (Replay_inputs != null)
             {
-                Replay = true;
-                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
-                Ghost = false;
+                Replay_inputs.Clear();
             }
-            else if(mode == "G")
-            {
-                Ghost = true;
-                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
-                Replay = false;
-            }
+
+            Replay = false;
+            Ghost = false;
         }
-        static Color randomColor()
+        static Color randomColor()        //self explanatory
         {
-            //self explanatory
             return Color.FromArgb(255, rnd.Next(50, 205), rnd.Next(50, 205), rnd.Next(50, 205));
         }
         static vertex[] infromFile(string path)
@@ -564,7 +551,7 @@ namespace OpenTk26_3
             Decoration.decor.Clear();
             if(RandomSeed%2 == 0)
             {
-                int trees = Decoration.decorRand.Next(1, 2);
+                int trees = Decoration.decorRand.Next(15, 45);
                 for(int i  = 0; i < trees; i++)
                 {
                     new Decoration("tree.obj", Color.ForestGreen);
@@ -572,7 +559,7 @@ namespace OpenTk26_3
             }
             else
             {
-                int trees = Decoration.decorRand.Next(1, 2);
+                int trees = Decoration.decorRand.Next(15, 45);
                 for (int i = 0; i < trees; i++)
                 {
                     new Decoration("cactus.obj", Color.ForestGreen);
@@ -604,6 +591,7 @@ namespace OpenTk26_3
             //Console.WriteLine(Kart.Cars[0].centre.X + "   " + Kart.Cars[0].centre.Z);
             base.OnUpdateFrame(e);
 
+
             TotalframeCount++;
             frameCount++;
             frameCount = frameCount % 360;
@@ -632,6 +620,17 @@ namespace OpenTk26_3
                     ReplayCar(Kart.Cars[1]);
 
                     MoveCars(Kart.Cars[1], true);
+                    if(TotalframeCount %3 == 0)
+                    {
+                        Kart.Cars.Add(new Kart(randomColor())); 
+                        Kart.Cars.Last().Scale(carScale);
+                        Kart.Cars.Last().SetPos(Kart.Cars[1].centre);
+                        Kart.Cars.Last().direction = (Kart.Cars[1].direction);
+                        if(Kart.Cars.Count() > 10)
+                        {
+                            Kart.Cars.RemoveAt(2);
+                        }
+                    }
                 }
                 else
                 {
@@ -651,7 +650,7 @@ namespace OpenTk26_3
             if (Kart.Cars[0].Laps == TargetLaps && !Finished)
             {
                 FinishTime = TotalframeCount/30f;
-                float timeTest = Replay ? new Program.Leaderboard(RandomSeed.ToString()).Fastest() : FinishTime;
+                float timeTest = Replay ? new Program.Leaderboard(RandomSeed.ToString()).Fastest().time : FinishTime;
                 Console.WriteLine($"Finished with a time of {timeTest} seconds!!!");
                 Finished = true;
             }
@@ -2478,9 +2477,6 @@ namespace OpenTk26_3
                 }
             }
         }
-
-
-
     }
     
 }

@@ -121,6 +121,40 @@ namespace OpenTk26_3
         {
             if (finishTime != 0)
             {
+                if (File.Exists(seed.ToString()))
+                {
+                    Leaderboard CheckForReplay = new Program.Leaderboard(seed.ToString());
+                    if (CheckForReplay.Fastest().time >= finishTime)
+                    {
+                        Console.WriteLine($"you beat {CheckForReplay.Fastest().name} by {CheckForReplay.Fastest().time - finishTime} seconds");
+                        Console.WriteLine("your replay is being saved");
+                        try
+                        {
+                            File.Delete(seed.ToString());
+                        }
+                        catch { }
+                        File.WriteAllLines(seed.ToString(), Inputs);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("you are the first to complete this track");
+                    Console.WriteLine("your replay is being saved");
+                    try
+                    {
+                        File.Delete(seed.ToString());
+                    }
+                    catch { }
+                    File.WriteAllLines(seed.ToString(), Inputs);
+                }
+                
+
+
+
+
+
+
+
                 string LeaderADD = "";
                 while (true)
                 {
@@ -146,16 +180,7 @@ namespace OpenTk26_3
                 {
                     Program.Leaderboard board = new Program.Leaderboard(LeaderADD, finishTime, seed);
                 }
-                Leaderboard CheckForReplay = new Program.Leaderboard(seed.ToString());
-                if (float.Parse(CheckForReplay.Fastest().ToString()) <= float.Parse(finishTime.ToString()))
-                {
-                    try
-                    {
-                        File.Delete(seed.ToString());
-                    }
-                    catch { }
-                    File.WriteAllLines(seed.ToString(), Inputs);
-                }
+
             }
         }
         public class Leaderboard
@@ -178,9 +203,9 @@ namespace OpenTk26_3
                     board.Add(new Leaderboard_entry(a[i].Split(' ')[0], float.Parse(a[i].Split(' ')[1])));
                 }
             }
-            public float Fastest()
+            public Leaderboard_entry Fastest()
             {
-                return board[0].time;
+                return board[0];
             }
             public void top5()
             {
@@ -222,12 +247,10 @@ namespace OpenTk26_3
                 }
                 File.WriteAllLines(path + "_BOARD.txt", a);
             }
-            public void sortBoard()
+            public void sortBoard() //cannot use standard .sort() because custom data structure
             {
-                bool swapped;
                 for (int i = board.Count(); i > 0; i--)
                 {
-                    swapped = false;
                     for (int j = 0; j < i - 1; j++)
                     {
                         if (board[j].time > board[j + 1].time)
@@ -235,20 +258,10 @@ namespace OpenTk26_3
                             Leaderboard_entry temp = board[j + 1].Clone();
                             board[j + 1] = board[j].Clone();
                             board[j] = temp.Clone();
-                            swapped = true;
-                        }
-                        if (!swapped)
-                        {
-                            break;
                         }
                     }
 
                 }
-                //for (int i = 0; i < A.Length; i++)
-                //{
-                //    Console.Write(A[i] + " ");
-                //}
-
             }
             public void AddValue(string name, float time)
             {
@@ -333,9 +346,6 @@ namespace OpenTk26_3
             Console.WriteLine("Exit 'X'");
             return choiceMaker("PLGRX");
         } 
-
-
-
     }
 
 }
