@@ -147,8 +147,7 @@ namespace OpenTk26_3
                     Program.Leaderboard board = new Program.Leaderboard(LeaderADD, finishTime, seed);
                 }
                 Leaderboard CheckForReplay = new Program.Leaderboard(seed.ToString());
-                CheckForReplay.SaveBoard();
-                if (CheckForReplay.Fastest() == finishTime)
+                if (float.Parse(CheckForReplay.Fastest().ToString()) <= float.Parse(finishTime.ToString()))
                 {
                     try
                     {

@@ -1,30 +1,12 @@
 ﻿using OpenTK;
+using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Input;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Drawing;
-using System.CodeDom;
-using OpenTK.Graphics;
-using OpenTK.Input;
 using System.IO;
-using System.Threading;
-using System.ComponentModel;
-using System.Globalization;
-using System.Media;
-using System.Timers;
-using System.Diagnostics;
-using System.Security.Policy;
-using static OpenTk26_3.Game;
-using System.Net.NetworkInformation;
-using System.Drawing.Drawing2D;
-using System.Runtime.InteropServices;
-using System.Runtime.ConstrainedExecution;
-using System.Data.OleDb;
-using System.Runtime;
-using System.Net;
+using System.Linq;
 
 namespace OpenTk26_3
 {
@@ -74,8 +56,21 @@ namespace OpenTk26_3
         //in the constructors there are many arbitrary re-assignments. this is because some of these are static to the Game class and would persist between games, reseting them fixes this.
         public Game(int width, int height, int seed) : base(width, height, GraphicsMode.Default, "game")
         {
-            rnd = new Random(RandomSeed);
+            if(seed % 2 == 0)
+            {//grass
+                Terrain.LandColor = Color.FromArgb(0,0,180,0);
+                Terrain.TrackColor = Color.DarkGreen;
+            }
+            else
+            {//sand
+                Terrain.LandColor = Color.SandyBrown;
+                Terrain.TrackColor = Color.Black;
+            }
             RandomSeed = seed;
+            rnd = new Random(RandomSeed);
+            Item.itemRand = new Random(RandomSeed);
+            Decoration.decorRand = new Random(RandomSeed);
+
             screenHeight = height;
             screenWidth = width;
             Finished = false;
@@ -84,11 +79,26 @@ namespace OpenTk26_3
             Shape.shapes.Clear();
             player = new Game.camera(0, 0, 0);
             TotalframeCount = 0;
+            record_inputs.Clear();
+            Replay_inputs.Clear();
         }
         public Game(int width, int height, int seed, string mode) : base(width, height, GraphicsMode.Default, "game")
         {
-            rnd = new Random(RandomSeed);
+            if (seed % 2 == 0)
+            {//grass
+                Terrain.LandColor = Color.FromArgb(0,0,180,0);                
+                Terrain.TrackColor = Color.DarkGreen;
+            }
+            else
+            {//sand
+                Terrain.LandColor = Color.SandyBrown;
+                Terrain.TrackColor = Color.Black;
+            }
             RandomSeed = seed;
+            rnd = new Random(RandomSeed);
+            Item.itemRand = new Random(RandomSeed);
+            Decoration.decorRand = new Random(RandomSeed);
+
             screenHeight = height;
             screenWidth = width;
             Finished = false;
@@ -258,7 +268,7 @@ namespace OpenTk26_3
             cam.forward = new Vector3(cam.pos.Normalized().X,0, cam.pos.Normalized().Z);
             //Matrix4.LookAt()
             //FreeMouse(ref player);
-        } //camera maintains alltitude above the ground looking towards the world origin
+        } //camera maintains alltitude above the ground looking towards the world origin <-- uses polar curves :O
         static void FreeFollowCam(ref camera cam, Kart car)
         {
             //cam.pos = car.centre;
@@ -550,6 +560,25 @@ namespace OpenTk26_3
             {
                 Item.SpawnItem();
             }
+
+            Decoration.decor.Clear();
+            if(RandomSeed%2 == 0)
+            {
+                int trees = Decoration.decorRand.Next(1, 2);
+                for(int i  = 0; i < trees; i++)
+                {
+                    new Decoration("tree.obj", Color.ForestGreen);
+                }
+            }
+            else
+            {
+                int trees = Decoration.decorRand.Next(1, 2);
+                for (int i = 0; i < trees; i++)
+                {
+                    new Decoration("cactus.obj", Color.ForestGreen);
+                }
+                //new Decoration("cactus.obj", Color.ForestGreen);
+            }
         }
 
         //built in OpenTK virtual function, run when the window is closed. if the track has been finished then the time and recorded inputs are sent to Program.cs to be saved in a leaderboard, if not a time of 0 is given which is caught in Program.cs
@@ -657,9 +686,6 @@ namespace OpenTk26_3
                     i--;
                 }
             }
-            Console.WriteLine(player.pos.X);
-            Console.WriteLine(player.pos.Z);
-
         }
 
         void drawObj(List<Shape> a, Matrix4 proj)
@@ -718,6 +744,7 @@ namespace OpenTk26_3
                 models.Add(item.shape);
             }
             models.AddRange(Kart.Cars);
+            models.AddRange(Decoration.decor);
 
             //draw every shape, OOP helps as terrain and item and kart inherit from shape so can be added to <models>, its not very slow because its only adding object references to the range
             drawObj(models, pro(player));
@@ -1018,6 +1045,55 @@ namespace OpenTk26_3
                 doBuffers();
 
             }
+            public Shape(string path, Color color, int ColorVariation)
+            {
+
+                string[] inp = File.ReadAllLines(path);
+
+                List<vertex> ver = new List<vertex>();
+
+                List<uint> tria = new List<uint>();
+
+
+                Vector3 col = new Vector3(color.R, color.G, color.B);
+
+                for (int i = 0; i < inp.Count(); i++)
+                {
+                    if (inp[i].Substring(0, 2) == "v ")
+                    {
+                        string[] point = inp[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        ver.Add(new vertex(new Vector3(float.Parse(point[1]), float.Parse(point[2]), float.Parse(point[3])), Color.FromArgb(255, Math.Min(Math.Abs((int)col[0] + Game.rnd.Next(-ColorVariation, ColorVariation)), 255), Math.Min(Math.Abs((int)col[1] + Game.rnd.Next(-ColorVariation, ColorVariation)), 255), Math.Min(Math.Abs((int)col[2] + Game.rnd.Next(-ColorVariation, ColorVariation)), 255))));
+                    }
+                    else if (inp[i].Substring(0, 2) == "f ")
+                    {
+                        string[] point = inp[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        tria.Add((uint)(int.Parse(point[1].Split('/')[0]) - 1));
+                        tria.Add((uint)(int.Parse(point[2].Split('/')[0]) - 1));
+                        tria.Add((uint)(int.Parse(point[3].Split('/')[0]) - 1));
+                    }
+                }
+
+                this.verts = ver.ToArray();
+                this.triangle = tria.ToArray();
+
+
+                this.centre = avgPos();
+                this.count = this.triangle.Count();
+
+                this.angle = new Vector3(0, 0, 0);
+
+
+                SetPosVerts(centre, angle);
+
+                this.centre = avgPos();
+                shapes.Add(count);
+
+
+
+                doBuffers();
+
+            }
             public void doBuffers()
             {
 
@@ -1165,6 +1241,10 @@ namespace OpenTk26_3
             public virtual void Scale(float scale)
             {
                 this.scale = scale * this.scale;
+            }
+            public virtual void setScale(float scale)
+            {
+                this.scale = new Vector3(scale,scale,scale);
             }
             public float[] GetFloat()
             {
@@ -1424,6 +1504,72 @@ namespace OpenTk26_3
                 return false;
             }
         }
+        class Decoration : Shape
+        {
+            public static Random decorRand = new Random(RandomSeed);
+            public static List<Decoration> decor = new List<Decoration>();
+            public Decoration(string path, Color color) : base(path, color)
+            {
+                if (PlaceItem())
+                {
+                    decor.Add(this);
+                }
+
+               this.Scale(10f + (float)rnd.NextDouble());
+            }
+
+            public bool PlaceItem()
+            {
+                bool tooClose = false;
+                int tryCount = 0;
+                while (true)
+                {
+                    this.centre = new Vector3(decorRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, decorRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
+
+
+                    ////
+                    //tripleCollide(landscape, this.shape, out float gHeight);
+                    //tripleCollide(racetrack, this.shape, out float tHeight);
+                    //if (tHeight > gHeight)
+                    //{
+                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + tHeight;
+                    //}
+                    //else
+                    //{
+                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + gHeight;
+                    //}
+                    //return true;
+                    ////
+
+                    Collide_With_angle(landscape, this, out float gHeight);
+                    Collide_With_angle(racetrack, this, out float tHeight);
+                    if (tHeight < gHeight)
+                    {
+                        this.centre.Y = this.dimensions.Y * 2 + tHeight;
+                        foreach (Decoration a in decor)
+                        {
+                            if (a != this)
+                            {
+                                if ((a.centre - this.centre).Length < 100 * meter)
+                                {
+                                    tooClose = true;
+                                }
+                            }
+                        }
+                        if (tryCount > 10)
+                        {
+                            return false;
+                        }
+                        if (!tooClose)
+                        {
+                            return true;
+                        }
+                        tryCount++;
+                        tooClose = false;
+                    }
+                }
+            }
+        }
         class Kart /*Kachow*/ : Shape 
         {
             public int big = 0;
@@ -1590,8 +1736,8 @@ namespace OpenTk26_3
             public Vector2 startPos;
             public Vector2 checkpointPos;
             public static Vector2 offset;
-            Color LandColor = Color.Green;
-            Color TrackColor = Color.Black;
+            public static Color LandColor;
+            public static Color TrackColor;
             string path = "128_good.obj";
             public static void getRan() //moves some distance away for the perlin noise
             {
@@ -1615,7 +1761,7 @@ namespace OpenTk26_3
                 Console.WriteLine(temporary.Min());
                 Console.WriteLine(temporary.Max());
 
-                terrain = new Shape(path, LandColor);
+                terrain = new Shape(path, LandColor,25);
                 terrain.Scale(squareSize);
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -1623,8 +1769,9 @@ namespace OpenTk26_3
                     {
                         terrain.verts[gridDimension * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
 
-                        Color col = terrain.verts[gridDimension * i + j].color;
-                        terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(Math.Log(heights[i, j]) * 255), 255)) / 2, col.B);
+                        //Color col = LandColor;
+                        //terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, col.G, col.B);
+                        //(col.G + (int)Math.Min((int)(Math.Log(heights[i, j]) * 255), 255)) / 2
                         //Console.WriteLine(terrain.verts[gridDimension *i + j].pos.X);
                     }
                 }
@@ -1645,7 +1792,7 @@ namespace OpenTk26_3
                 Console.WriteLine(temporary.Min());
                 Console.WriteLine(temporary.Max());
 
-                terrain = new Shape(path, TrackColor);
+                terrain = new Shape(path, TrackColor,25);
                 terrain.Scale(squareSize);
 
                 for (int i = 0; i < heights.GetLength(0); i++)
@@ -1654,8 +1801,9 @@ namespace OpenTk26_3
                     {
                         terrain.verts[gridDimension * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
 
-                        Color col = terrain.verts[gridDimension * i + j].color;
-                        terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, (col.G + (int)Math.Min((int)(Math.Log(heights[i, j]) * 255), 255)) / 2, col.B);
+                        //Color col = terrain.verts[gridDimension * i + j].color;
+                        //Color col = TrackColor;
+                        //terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, col.G, col.B);
                         //terrain.verts[256 * i + j].color = Color.FromArgb(0,0,0);
                     }
                 }
@@ -2293,39 +2441,40 @@ namespace OpenTk26_3
                     return v;
                 }
 
-                static float DotProduct(int ix, int iy, float x, float y)
+                static float DotProduct(int x_Offset, int y_Offset, float x, float y)
                 {
-                    Vector2 gradient = randomGradient(ix, iy);
+                    Vector2 gradient = randomGradient(x_Offset, y_Offset);
 
-                    float dx = x - (float)ix;
-                    float dy = y - (float)iy;
-
-                    return (dx * gradient.X + dy * gradient.Y);
+                    return ((x - (float)x_Offset) * gradient.X + (y - (float)y_Offset) * gradient.Y);
                 }
 
                 public static float perlin(float x, float y)
                 {
-                    int x0 = (int)Math.Floor(x);
-                    int x1 = x0 + 1;
-                    int y0 = (int)Math.Floor(y);
-                    int y1 = y0 + 1;
+                    //corners of a grid 
+                    int x_Floor = (int)Math.Floor(x);
+                    int x_Ceiling = x_Floor + 1;
+                    int y_Floor = (int)Math.Floor(y);
+                    int y_Ceiling = y_Floor + 1;
 
-                    float sx = x - (float)x0;
-                    float sy = y - (float)y0;
+                    //0-1 how far along from the bottom left side is the point
+                    float x_Offset = x - (float)x_Floor;
+                    float y_Offset = y - (float)y_Floor;
 
-                    float n0, n1, ix0, ix1, value;
+                    float temp0, temp1, interpolate1, interpolate2, value;
 
-                    n0 = DotProduct(x0, y0, x, y);
-                    n1 = DotProduct(x1, y0, x, y);
-                    ix0 = Lerp(n0, n1, sx);
+                    //dot products find the value for the botton line of the square
+                    temp0 = DotProduct(x_Floor, y_Floor, x, y);
+                    temp1 = DotProduct(x_Ceiling, y_Floor, x, y);
+                    interpolate1 = Lerp(temp0, temp1, x_Offset);
 
-                    n0 = DotProduct(x0, y1, x, y);
-                    n1 = DotProduct(x1, y1, x, y);
-                    ix1 = Lerp(n0, n1, sx);
+                    //dot products find the value for the botton line of the square
+                    temp0 = DotProduct(x_Floor, y_Ceiling, x, y);
+                    temp1 = DotProduct(x_Ceiling, y_Ceiling, x, y);
+                    interpolate2 = Lerp(temp0, temp1, x_Offset);
 
-                    value = Lerp(ix0, ix1, sy);
+                    value = Lerp(interpolate1, interpolate2, y_Offset);
 
-                    return value + 0.5f;
+                    return (value +0.5f);
                 }
             }
         }
