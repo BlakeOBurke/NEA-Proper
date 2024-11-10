@@ -48,6 +48,7 @@ namespace OpenTk26_3
         static Game.camera player = new Game.camera(0, 0, 0);
 
         Shader shader;
+        Color GhostColor = Color.GhostWhite;
 
         static Terrain landscape;
         static Terrain racetrack;
@@ -519,7 +520,7 @@ namespace OpenTk26_3
 
             if (Ghost)
             {//in ghost mode a second car is needed, the cars and all shapes use OOP so this is simple
-                Kart.Cars.Add(new Kart(randomColor()));
+                Kart.Cars.Add(new Kart(GhostColor));
                 Kart.Cars.Last().Scale(carScale);
                 Kart.Cars.Last().SetPos(new Vector3(0, 40, 0));
             }
@@ -604,6 +605,7 @@ namespace OpenTk26_3
                 Exit();
             }
 
+            //if not finsihed, drive cars 
             if (!Finished)
             {
                 //in replay mode, use replay car to undo the replay file
@@ -620,15 +622,20 @@ namespace OpenTk26_3
                     ReplayCar(Kart.Cars[1]);
 
                     MoveCars(Kart.Cars[1], true);
-                    if(TotalframeCount %3 == 0)
+                    if(TotalframeCount %2 == 0)
                     {
-                        Kart.Cars.Add(new Kart(randomColor())); 
+                        Kart.Cars.Add(new Kart(GhostColor)); 
                         Kart.Cars.Last().Scale(carScale);
                         Kart.Cars.Last().SetPos(Kart.Cars[1].centre);
-                        Kart.Cars.Last().direction = (Kart.Cars[1].direction);
-                        if(Kart.Cars.Count() > 10)
+                        Kart.Cars.Last().setScale(Kart.Cars[1].scale[0]);
+                        Kart.Cars.Last().angle = (Kart.Cars[1].angle);
+                        if(Kart.Cars.Count() > 30)
                         {
                             Kart.Cars.RemoveAt(2);
+                        }
+                        for(int i = 2; i < Kart.Cars.Count(); i++)
+                        {
+                            Kart.Cars.Last().scale *= 0.995f;
                         }
                     }
                 }
@@ -649,13 +656,14 @@ namespace OpenTk26_3
             //check if the first car is finished
             if (Kart.Cars[0].Laps == TargetLaps && !Finished)
             {
+                //based on computer performance a stopwatch would have variable time, using gameupdates is more reliable
                 FinishTime = TotalframeCount/30f;
                 float timeTest = Replay ? new Program.Leaderboard(RandomSeed.ToString()).Fastest().time : FinishTime;
                 Console.WriteLine($"Finished with a time of {timeTest} seconds!!!");
                 Finished = true;
             }
 
-            //in replays and standard mode the items are used are after they are used. in ghost mode, the ghost car does not use up items becuase that would affect the main players gameplay
+            //in replays and standard mode the items are removed after they are used. in ghost mode, the ghost car does not use up items becuase that would affect the main players gameplay
             if ((Ghost) && !Finished)
             {
                 try//catches the index out of range exception from the ghost car finishing before the player and so trying to get instructions when there aren't any
@@ -731,17 +739,11 @@ namespace OpenTk26_3
 
             List<Shape> models = new List<Shape>();
             models.AddRange(Shape.Models);
+            JiggleItems(ref models);
             //models.AddRange(Kart.Cars);
             models.Add(landscape.terrain);
             models.Add(racetrack.terrain);
-            foreach (Item item in Item.Items)
-            {//make the items bob up and down and spin for visual splendor 
-                item.shape.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
-                //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
-                item.shape.angle += 0.0174533f * item.rotateOffset;
 
-                models.Add(item.shape);
-            }
             models.AddRange(Kart.Cars);
             models.AddRange(Decoration.decor);
 
@@ -754,7 +756,17 @@ namespace OpenTk26_3
             this.SwapBuffers();
 
         }
+        void JiggleItems(ref List<Shape> models)
+        {
+            foreach (Item item in Item.Items)
+            {//make the items bob up and down and spin for visual splendor 
+                item.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
+                //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
+                item.angle += 0.0174533f * item.rotateOffset;
 
+                models.Add(item);
+            }
+        }
         ////built in OpenTK virtual function, run whenever the screen is resized so that the game doesnt crash and draws to the new dimensions
         protected override void OnResize(EventArgs e)
         {
@@ -1280,24 +1292,24 @@ namespace OpenTk26_3
             }
         }
 
-        abstract class Item // items to modify gameplay
+        abstract class Item : Shape // items to modify gameplay
         {
             public static Random itemRand;
             public int frameOffset;
             public Vector3 rotateOffset;
-            public Item(string a, Color b)
+            public Item(string a, Color b):base(a,b)
             {
-                this.shape = new Shape(a, b);
+                //this.shape = new Shape(a, b);
 
                 Items.Add(this);
-                this.shape.Scale(meter * 2);
+                this.Scale(meter * 2);
                 //place on track function
 
                 if (!PlaceItem())
                 {
                     this.Delete();
                 }
-                this.shape.centre.Y += 2 * meter;
+                this.centre.Y += 2 * meter;
 
                 frameOffset = itemRand.Next(0, 360); 
                 rotateOffset = new Vector3((float)itemRand.NextDouble(), (float)itemRand.NextDouble(), (float)itemRand.NextDouble());
@@ -1312,9 +1324,15 @@ namespace OpenTk26_3
             {
                 Items.Remove(this);
             }
-            public virtual bool Collide(Shape shape) { return false; }
+            public bool Collide(Shape shape)
+            {
+                if ((shape.centre - this.centre).Length < this.scale.Length * 2)
+                {
+                    return true;
+                }
+                return false;
+            }
 
-            public Shape shape;
             public static List<Item> Items = new List<Item>();
 
             public static void SpawnItem()
@@ -1339,7 +1357,7 @@ namespace OpenTk26_3
                 int tryCount = 0;
                 while (true)
                 {
-                    shape.centre = new Vector3(itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
+                    centre = new Vector3(itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
 
 
                     ////
@@ -1356,16 +1374,16 @@ namespace OpenTk26_3
                     //return true;
                     ////
 
-                    Collide_With_angle(landscape, this.shape, out float gHeight);
-                    Collide_With_angle(racetrack, this.shape, out float tHeight);
+                    Collide_With_angle(landscape, this, out float gHeight);
+                    Collide_With_angle(racetrack, this, out float tHeight);
                     if (tHeight > gHeight)
                     {
-                        shape.centre.Y = shape.dimensions.Y * 2 + tHeight;
+                        centre.Y = dimensions.Y * 2 + tHeight;
                         foreach (Item item in Items)
                         {
                             if (item != this)
                             {
-                                if ((item.shape.centre - this.shape.centre).Length < 100 * meter)
+                                if ((item.centre - this.centre).Length < 100 * meter)
                                 {
                                     tooClose = true;
                                 }
@@ -1407,14 +1425,7 @@ namespace OpenTk26_3
                 car.boostDirection = 1;
                 car.boost = (1 * (int)(1 / tStep));
             }
-            public override bool Collide(Shape shape)
-            {
-                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
-                {
-                    return true;
-                }
-                return false;
-            }
+
         }
         class Slow /*not ZOOOOOOOOM*/ : Item
         {
@@ -1447,14 +1458,7 @@ namespace OpenTk26_3
                     car.boost = (1 * (int)(1 / tStep));
                 }
             }
-            public override bool Collide(Shape shape)
-            {
-                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
-                {
-                    return true;
-                }
-                return false;
-            }
+
         }
         class Giant /*LAAAAAAARRGE*/ : Item
         {
@@ -1475,34 +1479,9 @@ namespace OpenTk26_3
             {
                 car.big = (2 * (int)(1 / tStep));
             }
-            public override bool Collide(Shape shape)
-            {
-                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
-                {
-                    return true;
-                }
-                return false;
-            }
-        }
-        class NonItem /*not Implemented*/ : Item
-        {
-            public NonItem(string a = "Cube.obj") : base(a, randomColor())
-            {
 
-            }
-            public override void Consume(Kart car)
-            {
-                base.Consume(car);
-            }
-            public override bool Collide(Shape shape)
-            {
-                if ((shape.centre - this.shape.centre).Length < this.shape.scale.Length * 2)
-                {
-                    return true;
-                }
-                return false;
-            }
         }
+
         class Decoration : Shape
         {
             public static Random decorRand = new Random(RandomSeed);
@@ -2363,7 +2342,7 @@ namespace OpenTk26_3
                             float x = Ox + i / (float)a.GetLength(0);
                             float y = Oy + j / (float)a.GetLength(1);
 
-                            a[i, j] = SampleNoise(x, y, 1, 1, levels, 0.5f, 2f);
+                            a[i, j] = SampleNoise(x, y, 1, 1, levels, 2f);
                             //a[i, j] = (float)Math.Pow(a[i, j], 1.3f);
                             //function that manipulates the output to make it nicer
                             a[i, j] = (float)Math.Pow(Math.E, a[i, j]);
@@ -2371,47 +2350,17 @@ namespace OpenTk26_3
                         }
                     }
 
-                    /*float max = 0;
-                    for (int i = 0; i < a.GetLength(0); i++)
-                    {
-                        for (int j = 0; j < a.GetLength(1); j++)
-                        {
-                            if (a[i, j] > max)
-                            {
-                                max = a[i, j];
-                            }
-                        }
-                    }
-                    float min = 1;
-                    for (int i = 0; i < a.GetLength(0); i++)
-                    {
-                        for (int j = 0; j < a.GetLength(1); j++)
-                        {
-                            if (a[i, j] < min)
-                            {
-                                min = a[i, j];
-                            }
-                        }
-                    }
-
-                    for (int i = 0; i < a.GetLength(0); i++)
-                    {
-                        for (int j = 0; j < a.GetLength(1); j++)
-                        {
-                            a[i, j] = (a[i, j] - min) / (max - min);
-                        }
-                    }*/
                     return a;
                 }
-                static float SampleNoise(float x, float y, float amplitude, float frequency, int octaveCount, float persistence, float lacunarity)
+                static float SampleNoise(float x, float y, float amplitude, float frequency, int octaveCount, float amplitudeModifier)
                 {
                     float value = 0;
 
                     for (int i = 0; i < octaveCount; i++)
                     {
                         value += amplitude * perlin(x * frequency, y * frequency);
-                        amplitude *= persistence;
-                        frequency *= lacunarity;
+                        amplitude /= amplitudeModifier;
+                        frequency *= amplitudeModifier;
                     }
                     value = value / (float)(2 - Math.Pow(.5f, octaveCount - 1));
                     return value;
