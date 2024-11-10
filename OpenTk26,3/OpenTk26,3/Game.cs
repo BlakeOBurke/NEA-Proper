@@ -228,21 +228,15 @@ namespace OpenTk26_3
         static void FollowCam(ref camera cam, Kart car)
         {
             MouseState moose = Mouse.GetState();
-            cam.direction[1] -= (moose.X - MOUSEX) * 0.001f;
-            MOUSEX = moose.X;
+            cam.direction = new Vector3((float)Math.PI/10f,(float)Math.Atan2(-car.getForward().X, -car.getForward().Z), 0f);
 
-            cam.direction[0] += (moose.Y - MOUSEY) * 0.001f;
-            MOUSEY = moose.Y;
 
-            if (cam.direction[0] > Math.PI / 2 - 0.05f)
-            {
-                cam.direction[0] = (float)Math.PI / 2 - 0.05f;
-            }
-            else if (cam.direction[0] < -Math.PI / 2 + 0.05f)
-            {
-                cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
-            }
+            cam.camDistance -= (moose.ScrollWheelValue + MOUSEscroll);
+            MOUSEscroll = -moose.ScrollWheelValue;
+            if (cam.camDistance > cam.camMaxDistance) { cam.camDistance = cam.camMaxDistance; }
+            if (cam.camDistance < cam.camMinDistance) { cam.camDistance = cam.camMinDistance; }
 
+            cam.pos = car.centre - cam.camforward() * cam.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
         } //camera follows the car, can't change what way the camera faces
         static void World_Cam(ref camera cam)
         {
@@ -529,7 +523,7 @@ namespace OpenTk26_3
             Terrain.getRan();
 
             landscape = new Terrain();
-            racetrack = new Terrain("circle");
+            racetrack = new Terrain(false);
 
             landscape.terrain.SetPos(landscape.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
             racetrack.terrain.SetPos(racetrack.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
@@ -605,53 +599,7 @@ namespace OpenTk26_3
                 Exit();
             }
 
-            //if not finsihed, drive cars 
-            if (!Finished)
-            {
-                //in replay mode, use replay car to undo the replay file
-                //in ghost mode, let the player drive the first car [0] and use the replay for the second car [1]
-                //otherwise just let the player control the car 
-                //finally set the camera to follow car[0]
-                if (Replay)
-                {
-                    ReplayCar(Kart.Cars[0]);
-                }
-                else if (Ghost)
-                {
-                    DriveCar(Kart.Cars[0], input);
-                    ReplayCar(Kart.Cars[1]);
-
-                    MoveCars(Kart.Cars[1], true);
-                    if(TotalframeCount %2 == 0)
-                    {
-                        Kart.Cars.Add(new Kart(GhostColor)); 
-                        Kart.Cars.Last().Scale(carScale);
-                        Kart.Cars.Last().SetPos(Kart.Cars[1].centre);
-                        Kart.Cars.Last().setScale(Kart.Cars[1].scale[0]);
-                        Kart.Cars.Last().angle = (Kart.Cars[1].angle);
-                        if(Kart.Cars.Count() > 30)
-                        {
-                            Kart.Cars.RemoveAt(2);
-                        }
-                        for(int i = 2; i < Kart.Cars.Count(); i++)
-                        {
-                            Kart.Cars.Last().scale *= 0.995f;
-                        }
-                    }
-                }
-                else
-                {
-                    DriveCar(Kart.Cars[0], input);
-                }
-                MoveCars(Kart.Cars[0], false);
-
-                LooseFollowCam(ref player, Kart.Cars[0]);
-            }
-            else
-            {
-                //if its finished then use the world camera to see the whole course from above
-                World_Cam(ref player);
-            }
+            carAndCameraStuff(input);
 
             //check if the first car is finished
             if (Kart.Cars[0].Laps == TargetLaps && !Finished)
@@ -663,6 +611,63 @@ namespace OpenTk26_3
                 Finished = true;
             }
 
+            handleItems();
+        }
+        void carAndCameraStuff(KeyboardState input) //car and camera stuff for the on update frame
+        {
+            //if not finsihed, cars need to move
+            if (!Finished)
+            {
+                //in replay mode, use replay car to undo the replay file
+                //in ghost mode, let the player drive the first car [0] and use the replay for the second car [1]
+                //otherwise just let the player control the car 
+                //finally set the camera to follow car[0]
+                if (Replay)
+                {
+                    ReplayCar(Kart.Cars[0]);
+                    LooseFollowCam(ref player, Kart.Cars[0]);
+                }
+                else if (Ghost)
+                {
+                    DriveCar(Kart.Cars[0], input);
+                    ReplayCar(Kart.Cars[1]);
+                    MoveCars(Kart.Cars[1], true);
+
+                    if (TotalframeCount % 2 == 0)
+                    {
+                        Kart.Cars.Add(new Kart(GhostColor));
+                        Kart.Cars.Last().Scale(carScale);
+                        Kart.Cars.Last().SetPos(Kart.Cars[1].centre);
+                        Kart.Cars.Last().setScale(Kart.Cars[1].scale[0]);
+                        Kart.Cars.Last().angle = (Kart.Cars[1].angle);
+                        //cool trail of cars in ghost mode
+                        if (Kart.Cars.Count() > 30)
+                        {
+                            Kart.Cars.RemoveAt(2);
+                        }
+                        for (int i = 2; i < Kart.Cars.Count(); i++)
+                        {
+                            Kart.Cars.Last().scale *= 0.995f;
+                        }
+                    }
+                    FollowCam(ref player, Kart.Cars[0]);
+                }
+                else
+                {
+                    DriveCar(Kart.Cars[0], input);
+                    FollowCam(ref player, Kart.Cars[0]);
+                }
+                MoveCars(Kart.Cars[0], false);
+
+            }
+            else
+            {
+                //if its finished then use the world camera to see the whole course from above
+                World_Cam(ref player);
+            }
+        }
+        void handleItems()//does everything for items in OmUpdateFrame
+        {
             //in replays and standard mode the items are removed after they are used. in ghost mode, the ghost car does not use up items becuase that would affect the main players gameplay
             if ((Ghost) && !Finished)
             {
@@ -695,6 +700,32 @@ namespace OpenTk26_3
             }
         }
 
+
+        //built in OpenTK virtual function, run 30 times per second
+        protected override void OnRenderFrame(FrameEventArgs e)
+        {
+            base.OnRenderFrame(e);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            List<Shape> models = new List<Shape>();
+            models.AddRange(Shape.Models);
+            JiggleItems(ref models);
+            //models.AddRange(Kart.Cars);
+            models.Add(landscape.terrain);
+            models.Add(racetrack.terrain);
+
+            models.AddRange(Kart.Cars);
+            models.AddRange(Decoration.decor);
+
+            //draw every shape, OOP helps as terrain and item and kart inherit from shape so can be added to <models>, its not very slow because its only adding object references to the range
+            drawObj(models, CameraMatrix(player));
+
+            //reset the shader
+            shader.Dispose();
+
+            this.SwapBuffers();
+
+        }
         void drawObj(List<Shape> a, Matrix4 proj)
         {//proj is the projection matrix, the same for all objects
             for (int i = 0; i < a.Count(); i++)
@@ -730,32 +761,6 @@ namespace OpenTk26_3
                 GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
             }
         } //draw stuff
-
-        //built in OpenTK virtual function, run 30 times per second
-        protected override void OnRenderFrame(FrameEventArgs e)
-        {
-            base.OnRenderFrame(e);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            List<Shape> models = new List<Shape>();
-            models.AddRange(Shape.Models);
-            JiggleItems(ref models);
-            //models.AddRange(Kart.Cars);
-            models.Add(landscape.terrain);
-            models.Add(racetrack.terrain);
-
-            models.AddRange(Kart.Cars);
-            models.AddRange(Decoration.decor);
-
-            //draw every shape, OOP helps as terrain and item and kart inherit from shape so can be added to <models>, its not very slow because its only adding object references to the range
-            drawObj(models, pro(player));
-
-            //reset the shader
-            shader.Dispose();
-
-            this.SwapBuffers();
-
-        }
         void JiggleItems(ref List<Shape> models)
         {
             foreach (Item item in Item.Items)
@@ -767,6 +772,8 @@ namespace OpenTk26_3
                 models.Add(item);
             }
         }
+
+
         ////built in OpenTK virtual function, run whenever the screen is resized so that the game doesnt crash and draws to the new dimensions
         protected override void OnResize(EventArgs e)
         {
@@ -801,7 +808,7 @@ namespace OpenTk26_3
         public class camera // camera to get matrices for 3D 
         {
             //distance from car to camera in follow modes
-            public float camDistance = 25;
+            public float camDistance = 55;
             public float camMinDistance = 15;
             public float camMaxDistance = 55;
             public Vector3 pos;
@@ -841,7 +848,24 @@ namespace OpenTk26_3
             }
         }
 
-        public static Matrix4 pro(camera cam) // the projection matrix, if the game is over its slightly different as it looks to the centre of the world
+        static Matrix4 ProjectionMatrix(float near/*distance of near plane of frustum*/, float far/*distance of far plane of frustum*/, float fov, float a /*aspect ratio*/)
+        {
+            //most of the matrix is 0's so use built in function 
+            //most of the maths is in the write up
+            Matrix4 projector = Matrix4.Zero;
+            //projector[0,0] = 1 / a * (float)Math.Tan(fov / 2);
+            //projector[1,1] = 1 / (float)Math.Tan(fov / 2);
+            //projector[2, 2] = -(far - near) / (near-far);
+            //projector[2,3] = -2*(far * near) / (near-far);
+            //projector[3, 2] = 1;
+            projector[0, 0] = 2 * near/ (float)Math.Atan(fov/2);
+            projector[1, 1] = a * 2 * near / (float)Math.Atan(fov / 2); ;
+            projector[2, 2] = -(far + near) / (far - near);
+            projector[2, 3] = -2 * (far * near) / (far - near);
+            projector[3, 2] = -1;
+            return projector;
+        }
+        public static Matrix4 CameraMatrix(camera cam) // the projection matrix, if the game is over its slightly different as it looks to the centre of the world
         {
             if (Finished == true)
             {
@@ -860,7 +884,8 @@ namespace OpenTk26_3
                 {
                     cam.zooooooom = 0.0001f;
                 }
-                camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
+                //camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
+                camera = camera * ProjectionMatrix(.5f, 1000f, cam.zooooooom, screenWidth / (float)screenHeight);
                 return camera;
 
             }
@@ -879,7 +904,8 @@ namespace OpenTk26_3
             {
                 cam.zooooooom = 0.0001f;
             }
-            camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
+            //camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
+            camer = camer * ProjectionMatrix(3.5f, 1000f, cam.zooooooom, screenWidth / (float)screenHeight);
             return camer;
         }
 
@@ -1723,10 +1749,8 @@ namespace OpenTk26_3
                 offset = new Vector2(rand.Next(0, 1000), rand.Next(0, 1000));
             }
 
-
-            public Terrain() //terrain for landscape
+            void PerlinHeightsForTerrainArray(Color color)
             {
-
                 heights = Perlin.DoPerlin(heights, offset.X, offset.Y, 4);
                 List<float> temporary = new List<float>();
                 for (int i = 0; i < heights.GetLength(0); i++)
@@ -1739,7 +1763,7 @@ namespace OpenTk26_3
                 Console.WriteLine(temporary.Min());
                 Console.WriteLine(temporary.Max());
 
-                terrain = new Shape(path, LandColor,25);
+                terrain = new Shape(path, color, 25);
                 terrain.Scale(squareSize);
                 for (int i = 0; i < heights.GetLength(0); i++)
                 {
@@ -1754,45 +1778,24 @@ namespace OpenTk26_3
                     }
                 }
 
+            }
+            public Terrain() //terrain for landscape
+            {
+
+                PerlinHeightsForTerrainArray(LandColor);
                 terrain.resetBuffers();
             }
-            public Terrain(string shape) //terrain for track, uses wavefunctioncollapse
+            public Terrain(bool UNUSED) //terrain for track, uses wavefunctioncollapse
             {
-                heights = Perlin.DoPerlin(heights, offset.X, offset.Y, 4);
-                List<float> temporary = new List<float>();
-                for (int i = 0; i < heights.GetLength(0); i++)
-                {
-                    for (int j = 0; j < heights.GetLength(1); j++)
-                    {
-                        temporary.Add(heights[i, j]);
-                    }
-                }
-                Console.WriteLine(temporary.Min());
-                Console.WriteLine(temporary.Max());
-
-                terrain = new Shape(path, TrackColor,25);
-                terrain.Scale(squareSize);
-
-                for (int i = 0; i < heights.GetLength(0); i++)
-                {
-                    for (int j = 0; j < heights.GetLength(1); j++)
-                    {
-                        terrain.verts[gridDimension * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
-
-                        //Color col = terrain.verts[gridDimension * i + j].color;
-                        //Color col = TrackColor;
-                        //terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, col.G, col.B);
-                        //terrain.verts[256 * i + j].color = Color.FromArgb(0,0,0);
-                    }
-                }
+                PerlinHeightsForTerrainArray(TrackColor); 
 
                 WaveFunctionCollapse[,] track = new WaveFunctionCollapse[trackSize, trackSize];
                 //start position and checkpoint position
                 Vector2 StartTile = new Vector2(0, 0);
-                Vector2 CheckTile = new Vector2(0, 0);
-                WaveFunctionCollapse.GenerateTrack(ref track, ref StartTile, ref CheckTile);
+                Vector2 CheckpointTile = new Vector2(0, 0);
+                WaveFunctionCollapse.GenerateTrack(ref track, ref StartTile, ref CheckpointTile);
                 startPos = new Vector2((StartTile.X - (trackSize/2f) + .5f) * (gridDimension/trackSize), (StartTile.Y - (trackSize/2f) + .5f) * (gridDimension / trackSize));
-                checkpointPos = new Vector2((CheckTile.X - (trackSize / 2f) + .5f) * (gridDimension / trackSize), (CheckTile.Y - (trackSize / 2f) + .5f) * (gridDimension / trackSize));
+                checkpointPos = new Vector2((CheckpointTile.X - (trackSize / 2f) + .5f) * (gridDimension / trackSize), (CheckpointTile.Y - (trackSize / 2f) + .5f) * (gridDimension / trackSize));
                 int trackMin = (gridDimension / trackSize)/4;
                 int trackMax = ((gridDimension / trackSize)*3)/4;
                 int trackGrid = (gridDimension / trackSize);
@@ -1804,14 +1807,6 @@ namespace OpenTk26_3
                         int x = i / trackGrid;
                         int y = j / trackGrid;
 
-                        if (x > 7)
-                        {
-                            x = 7;
-                        }
-                        if (y > 7)
-                        {
-                            y = 7;
-                        }
                         bool a = false;
 
                         if ("|" == track[y, x].name && (i % trackGrid > trackMin && i % trackGrid < trackMax))
@@ -1845,14 +1840,14 @@ namespace OpenTk26_3
 
                         if (a)
                         {
-                            terrain.verts[gridDimension * i + j].pos.Y += .1f;
+                            terrain.verts[gridDimension * i + j].pos.Y += .01f;
                         }
                         else
                         {
-                            terrain.verts[gridDimension * i + j].pos.Y -= .5f;
+                            terrain.verts[gridDimension * i + j].pos.Y -= .02f;
                         }
                         //colours the start tile differently
-                        if (new Vector2(x, y) == StartTile || new Vector2(x, y) == CheckTile)
+                        if (new Vector2(x, y) == StartTile || new Vector2(x, y) == CheckpointTile)
                         {
                             Color temporaryColor = terrain.verts[gridDimension * i + j].color;
                             terrain.verts[gridDimension * i + j].color = Color.FromArgb(255, Math.Min(255, temporaryColor.R + 50), Math.Max(0, temporaryColor.G - 50), Math.Min(255, temporaryColor.B + 50));
@@ -2204,7 +2199,7 @@ namespace OpenTk26_3
                     {
                         return false;
                     }
-                    else if (tracklength < 17)
+                    else if (tracklength < 12)
                     {
                         return false;
                     }
@@ -2244,7 +2239,7 @@ namespace OpenTk26_3
                     int x, y;
                     y = (int)startPosition.Y;
                     x = (int)startPosition.X;
-                    bool[,] discoverred = new bool[8, 8];
+                    bool[,] discoverred = new bool[trackSize, trackSize];
                     List<WaveFunctionCollapse> tiles = new List<WaveFunctionCollapse>();
                     while (tracklength > 0)
                     {

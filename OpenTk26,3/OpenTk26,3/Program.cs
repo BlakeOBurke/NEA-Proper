@@ -57,7 +57,7 @@ namespace OpenTk26_3
                     case 'G':
                         //user must enter a seed for ghost mode because a replay must exist for that seed
                         Console.WriteLine("enter a seed, press enter to return to menu");
-                        if (int.TryParse(Console.ReadLine(), out seed))
+                        if (int.TryParse(Console.ReadLine(), out seed) && File.Exists(seed.ToString()))
                         {
                             SEED = seed;
                             Game ga = new Game(1200, 900, SEED, "G");
@@ -65,6 +65,10 @@ namespace OpenTk26_3
                             ga.Dispose();
                             Console.WriteLine($"your seed was {SEED}");
                             SetLeader(SEED, FinishedTime);
+                        }
+                        else
+                        {
+                            Console.WriteLine("invalid seed");
                         }
 
 
@@ -95,12 +99,16 @@ namespace OpenTk26_3
                         break;
                     case 'R':
                         Console.WriteLine("enter a seed, press enter for a new course");
-                        if (int.TryParse(Console.ReadLine(), out seed))
+                        if (int.TryParse(Console.ReadLine(), out seed) && File.Exists(seed.ToString()))
                         {
                             SEED = seed;
                             Game ga = new Game(1200, 900, SEED, "R");
                             ga.Run(30, 30);
                             ga.Dispose();
+                        }
+                        else
+                        {
+                            Console.WriteLine("invalid seed");
                         }
                         break;
 
@@ -109,7 +117,7 @@ namespace OpenTk26_3
                 if (finishGame) { break; }
             }
         }
-        public static void setTime(float time)
+        public static void setTime(float time)//public methods that allow Game.cs to change variables here
         {
             FinishedTime = time;
         }
@@ -161,7 +169,7 @@ namespace OpenTk26_3
                     Console.WriteLine("enter your name to save your time");
                     LeaderADD = Console.ReadLine();
 
-                    if (LeaderADD.Contains(" "))
+                    if (LeaderADD.Count() == 0 || LeaderADD.Contains(" "))
                     {
                         Console.WriteLine("invalid name, try again");
                     }
@@ -340,7 +348,6 @@ namespace OpenTk26_3
         {
             Console.WriteLine("Play Game 'P'");
             Console.WriteLine("View Leaderboard 'L'");
-            Console.WriteLine("PLACEHOLDER 'AHHH'");
             Console.WriteLine("Ghost Mode 'G'");
             Console.WriteLine("Replay 'R'");
             Console.WriteLine("Exit 'X'");
