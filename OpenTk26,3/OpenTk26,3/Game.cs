@@ -35,7 +35,7 @@ namespace OpenTk26_3
         static bool Finished = false;
         static float FinishTime;
 
-        static float maxCarAcceleration = .25f * 30;
+        static float maxCarAcceleration = .15f * 30;
         static float maxCarVelocity = 2f * 30;
 
         const float tStep = 1 / 30f;
@@ -304,7 +304,14 @@ namespace OpenTk26_3
                 string[] inputs = Replay_inputs[TotalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 if (inputs.Contains("W"))
                 {
-                    car.velocity -= car.getForward() * maxCarAcceleration;
+                    if (inputs.Contains("S"))
+                    {
+                        car.velocity -= car.getForward() * maxCarAcceleration * 0.5f;
+                    }
+                    else
+                    {
+                        car.velocity -= car.getForward() * maxCarAcceleration;
+                    }
                 }
                 else if (inputs.Contains("S"))
                 {
@@ -315,7 +322,7 @@ namespace OpenTk26_3
                 {
                     if (car.velocity.Length > .5f)
                     {
-                        car.angle.Y += car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
+                        car.angle.Y += car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                     }
                     car.velocity_multi = 0.85f;
                 }
@@ -323,7 +330,7 @@ namespace OpenTk26_3
                 {
                     if (car.velocity.Length > .5f)
                     {
-                        car.angle.Y -= car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
+                        car.angle.Y -= car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                     }
                     car.velocity_multi = 0.85f;
                 }
@@ -342,8 +349,16 @@ namespace OpenTk26_3
             record_inputs.Add(" ");
             if (input.IsKeyDown(Key.Up) || input.IsKeyDown(Key.W))
             {
-                car.velocity -= car.getForward() * maxCarAcceleration;
-                record_inputs[TotalframeCount - 1] += "W ";
+                if (input.IsKeyDown(Key.S) || input.IsKeyDown(Key.Down))
+                {
+                    car.velocity -= car.getForward() * maxCarAcceleration * 0.5f;
+                    record_inputs[TotalframeCount - 1] += "W S ";
+                }
+                else
+                {
+                    car.velocity -= car.getForward() * maxCarAcceleration;
+                    record_inputs[TotalframeCount - 1] += "W ";
+                }
             }
             else if (input.IsKeyDown(Key.Down) || input.IsKeyDown(Key.S))
             {
@@ -355,7 +370,7 @@ namespace OpenTk26_3
             {
                 if (car.velocity.Length > .5f)
                 {
-                    car.angle.Y -= car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
+                    car.angle.Y -= car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                 }
                 car.velocity_multi = 0.85f;
                 record_inputs[TotalframeCount - 1] += "D ";
@@ -365,7 +380,7 @@ namespace OpenTk26_3
             {
                 if (car.velocity.Length > .5f)
                 {
-                    car.angle.Y += car.boostDirection == 1 ? 0.02f * car.velocity.Length * tStep * 1.5f : 0.02f * car.velocity.Length * tStep;
+                    car.angle.Y += car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                 }
                 car.velocity_multi = 0.85f;
                 record_inputs[TotalframeCount - 1] += "A ";
@@ -491,6 +506,11 @@ namespace OpenTk26_3
             {
                 car.big--;
             }
+
+
+            //collide after movement to fix visual issues
+            Collide_With_angle(racetrack, car/*, out Vector2 raceAngle,*/ , out tHeight);
+            Collide_With_angle(landscape, car/*, out Vector2 grassAngle,*/ , out lHeight);
         }
 
         //built in OpenTK virtual function, run immediately
@@ -853,18 +873,17 @@ namespace OpenTk26_3
             //most of the matrix is 0's so use built in function 
             //most of the maths is in the write up
             Matrix4 projector = Matrix4.Zero;
-            //projector[0,0] = 1 / a * (float)Math.Tan(fov / 2);
-            //projector[1,1] = 1 / (float)Math.Tan(fov / 2);
-            //projector[2, 2] = -(far - near) / (near-far);
-            //projector[2,3] = -2*(far * near) / (near-far);
-            //projector[3, 2] = 1;
-            projector[0, 0] = 2 * near/ (float)Math.Atan(fov/2);
-            projector[1, 1] = a * 2 * near / (float)Math.Atan(fov / 2); ;
+
+            //Matrix4.CreatePerspectiveFieldOfView();
+
+            projector[0, 0] = 2f * near/ (float)Math.Tan(fov/2f);
+            projector[1, 1] = a * 2f * near / (float)Math.Tan(fov / 2f); ;
             projector[2, 2] = -(far + near) / (far - near);
-            projector[2, 3] = -2 * (far * near) / (far - near);
-            projector[3, 2] = -1;
+            projector[2, 3] = -2f * (far * near) / (far - near);
+            projector[3, 2] = -1f;
             return projector;
         }
+
         public static Matrix4 CameraMatrix(camera cam) // the projection matrix, if the game is over its slightly different as it looks to the centre of the world
         {
             if (Finished == true)

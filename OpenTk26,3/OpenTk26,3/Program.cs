@@ -39,7 +39,7 @@ namespace OpenTk26_3
                         {
                             SEED = seed;
                             Game ga = new Game(1200, 900, SEED);
-                            ga.Run(30, 30);
+                            ga.Run(30,30);
                             ga.Dispose();
                         }
                         else
