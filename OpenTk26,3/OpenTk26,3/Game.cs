@@ -1010,7 +1010,7 @@ namespace OpenTk26_3
             {
                 if (disposedValue == false)
                 {
-                    Console.WriteLine("GPU Resource leak! Did you forget to call Dispose()?");
+                    Console.WriteLine("GPU Resource leak");
                 }
             }
 
@@ -1779,8 +1779,8 @@ namespace OpenTk26_3
                         temporary.Add(heights[i, j]);
                     }
                 }
-                Console.WriteLine(temporary.Min());
-                Console.WriteLine(temporary.Max());
+                //Console.WriteLine(temporary.Min());
+                //Console.WriteLine(temporary.Max());
 
                 terrain = new Shape(path, color, 25);
                 terrain.Scale(squareSize);
@@ -2253,8 +2253,8 @@ namespace OpenTk26_3
                     }
 
                     //tracklength/=2;
-                    displa(track);
-                    Console.WriteLine(tracklength);
+                    //displa(track);
+                    //Console.WriteLine(tracklength);
                     int x, y;
                     y = (int)startPosition.Y;
                     x = (int)startPosition.X;
@@ -2332,10 +2332,10 @@ namespace OpenTk26_3
 
                         tracklength -= 1;
                     }
-                    for (int i = 0; i < tiles.Count(); i++)
-                    {
-                        Console.WriteLine(tiles[i].name);
-                    }
+                    //for (int i = 0; i < tiles.Count(); i++)
+                    //{
+                    //    //Console.WriteLine(tiles[i].name);
+                    //}
 
                     x = tiles[tiles.Count / 2].x;
                     y = tiles[tiles.Count / 2].y;
