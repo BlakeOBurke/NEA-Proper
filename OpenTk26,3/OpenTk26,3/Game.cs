@@ -511,6 +511,10 @@ namespace OpenTk26_3
             //collide after movement to fix visual issues
             Collide_With_angle(racetrack, car/*, out Vector2 raceAngle,*/ , out tHeight);
             Collide_With_angle(landscape, car/*, out Vector2 grassAngle,*/ , out lHeight);
+            if (tHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y || lHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y)
+            {
+                car.centre.Y = (float)Math.Max(lHeight, tHeight) + car.dimensions.Y / 2f;
+            }
         }
 
         //built in OpenTK virtual function, run immediately
@@ -876,11 +880,13 @@ namespace OpenTk26_3
 
             //Matrix4.CreatePerspectiveFieldOfView();
 
-            projector[0, 0] = 2f * near/ (float)Math.Tan(fov/2f);
-            projector[1, 1] = a * 2f * near / (float)Math.Tan(fov / 2f); ;
-            projector[2, 2] = -(far + near) / (far - near);
-            projector[2, 3] = -2f * (far * near) / (far - near);
+            projector[0, 0] = (float)((2f * near)/ Math.Tan(fov/2f));
+            projector[1, 1] = (float)((a * 2f * near)/ Math.Tan(fov / 2f));
+            projector[2, 2] = (-far - near) / (far - near);
+            projector[2, 3] = (-2f * (far * near)) / (far - near);
             projector[3, 2] = -1f;
+
+            //return Matrix4.CreatePerspectiveFieldOfView(fov, a, near, far);
             return projector;
         }
 
@@ -1649,6 +1655,7 @@ namespace OpenTk26_3
             A *= Terrain.squareSize;
             B *= Terrain.squareSize;
             C *= Terrain.squareSize;
+            //takes into terrain coords
             position += (Terrain.squareSize / 2f) * new Vector3(Terrain.gridDimension, 0, Terrain.gridDimension);
             float[] barycentrics = new float[3];
 
@@ -1704,23 +1711,25 @@ namespace OpenTk26_3
             //corners
             Vector3[] c = new Vector3[3];
             float[] barry = new float[3];
-            if (X < Z)
+            float X_L = X - X_;
+            float Z_L = Z - Z_;
+            if (X_L < Z_L)
             {
                 //bottom right
                 //c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
                 //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
                 //c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
 
-                c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
-                c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + (Z_ + 1)].pos;
-                c[1] = terrain.terrain.verts[X_ * Terrain.gridDimension + (Z_ + 1)].pos;
+                c[1] = terrain.terrain.verts[X_ * (Terrain.gridDimension+1) + Z_].pos;
+                c[2] = terrain.terrain.verts[(X_ + 1) * (Terrain.gridDimension + 1) + (Z_ + 1)].pos;
+                c[0] = terrain.terrain.verts[X_ * (Terrain.gridDimension + 1) + (Z_ + 1)].pos;
 
                 //c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
                 //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
                 //c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
                 //barry = barycentric(terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
                 barry = barycentric(c[0], c[1], c[2], B);
-                normal = -Vector3.Cross(c[2] - c[0], c[1] - c[0]);
+                normal = Vector3.Cross(c[2] - c[0], c[1] - c[0]);
             }
             else
             {
@@ -1728,16 +1737,16 @@ namespace OpenTk26_3
                 //c[0] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos;
                 //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
                 //c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
-                c[2] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + (Z_ + 1)].pos;
-                c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
-                c[0] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos;
+                c[2] = terrain.terrain.verts[(X_ + 1) * (Terrain.gridDimension + 1) + (Z_ + 1)].pos;
+                c[0] = terrain.terrain.verts[(X_ + 1) * (Terrain.gridDimension + 1) + Z_].pos;
+                c[1] = terrain.terrain.verts[X_ * (Terrain.gridDimension + 1) + Z_].pos;
 
 
 
 
                 //barry = barycentric(terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
                 barry = barycentric(c[0], c[1], c[2], B);
-                normal = -Vector3.Cross(c[1] - c[0], c[2] - c[0]);
+                normal = Vector3.Cross(c[1] - c[0], c[2] - c[0]);
             }
 
             Height = c[0].Y * barry[0] + c[1].Y * barry[1] + c[2].Y * barry[2];
@@ -1755,13 +1764,14 @@ namespace OpenTk26_3
             public static float HeightMulti = 3.5f;
             public static int trackSize = 8;
             public static int squareSize = 5;
-            float[,] heights = new float[gridDimension, gridDimension];
+            float[,] heights = new float[gridDimension+1, gridDimension+1];
             public Vector2 startPos;
             public Vector2 checkpointPos;
             public static Vector2 offset;
             public static Color LandColor;
             public static Color TrackColor;
-            string path = "128_good.obj";
+            //string path = "128_good.obj";
+            string path = "129_Terrain_good.obj";
             public static void getRan() //moves some distance away for the perlin noise
             {
                 rand = new Random(RandomSeed);
@@ -1788,7 +1798,7 @@ namespace OpenTk26_3
                 {
                     for (int j = 0; j < heights.GetLength(1); j++)
                     {
-                        terrain.verts[gridDimension * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
+                        terrain.verts[(gridDimension+1) * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
 
                         //Color col = LandColor;
                         //terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, col.G, col.B);
@@ -1825,9 +1835,10 @@ namespace OpenTk26_3
                     {
                         int x = i / trackGrid;
                         int y = j / trackGrid;
+                        x %= (gridDimension/trackGrid);
+                        y %= (gridDimension / trackGrid);
 
                         bool a = false;
-
                         if ("|" == track[y, x].name && (i % trackGrid > trackMin && i % trackGrid < trackMax))
                         {
                             a = true;
@@ -1852,6 +1863,7 @@ namespace OpenTk26_3
                         {
                             a = true;
                         }
+
                         //if ("|-LJF7".Contains(track[y, x].name))
                         //{
                         //    a = true;
@@ -1859,17 +1871,17 @@ namespace OpenTk26_3
 
                         if (a)
                         {
-                            terrain.verts[gridDimension * i + j].pos.Y += .01f;
+                            terrain.verts[(gridDimension + 1) * i + j].pos.Y += .15f;
                         }
                         else
                         {
-                            terrain.verts[gridDimension * i + j].pos.Y -= .02f;
+                            terrain.verts[(gridDimension + 1) * i + j].pos.Y -= .2f;
                         }
                         //colours the start tile differently
                         if (new Vector2(x, y) == StartTile || new Vector2(x, y) == CheckpointTile)
                         {
-                            Color temporaryColor = terrain.verts[gridDimension * i + j].color;
-                            terrain.verts[gridDimension * i + j].color = Color.FromArgb(255, Math.Min(255, temporaryColor.R + 50), Math.Max(0, temporaryColor.G - 50), Math.Min(255, temporaryColor.B + 50));
+                            Color temporaryColor = terrain.verts[(gridDimension+1) * i + j].color;
+                            terrain.verts[(gridDimension + 1) * i + j].color = Color.FromArgb(255, Math.Min(255, temporaryColor.R + 50), Math.Max(0, temporaryColor.G - 50), Math.Min(255, temporaryColor.B + 50));
                         }
                     }
 
@@ -2145,12 +2157,13 @@ namespace OpenTk26_3
                                         minPossibilities = A.possibilities.Count;
                                     }
                                 }
+                                //bit of linq to find all where possibilies count is the minimum
                                 A = tiles.Where(x => x.possibilities.Count == minPossibilities).ToArray()[rand.Next(0, tiles.Where(x => x.possibilities.Count == minPossibilities).Count())];
 
 
                                 //A.name = A.possibilities[rand.Next(0, A.possibilities.Count)];
                                 foreach (string possibility in A.possibilities)
-                                {
+                                {//if a tile is able to become Air then I must pick that otherwise multiple loops of track would be generated
                                     if (possibility == "Air")
                                     {
                                         A.name = "Air";
@@ -2218,7 +2231,7 @@ namespace OpenTk26_3
                     {
                         return false;
                     }
-                    else if (tracklength < 12)
+                    else if (tracklength < 17)
                     {
                         return false;
                     }
@@ -2369,7 +2382,7 @@ namespace OpenTk26_3
                 static float SampleNoise(float x, float y, float amplitude, float frequency, int octaveCount, float amplitudeModifier)
                 {
                     float value = 0;
-
+                    //add multiple 'octaves' to make it looks fancy
                     for (int i = 0; i < octaveCount; i++)
                     {
                         value += amplitude * perlin(x * frequency, y * frequency);
@@ -2403,11 +2416,11 @@ namespace OpenTk26_3
                     return v;
                 }
 
-                static float DotProduct(int x_Offset, int y_Offset, float x, float y)
+                static float Dot_position_random(int x_Offset, int y_Offset, float x, float y)
                 {
                     Vector2 gradient = randomGradient(x_Offset, y_Offset);
-
-                    return ((x - (float)x_Offset) * gradient.X + (y - (float)y_Offset) * gradient.Y);
+                    return Vector2.Dot(new Vector2(x - x_Offset, y - y_Offset), gradient);
+                    //return ((x - (float)x_Offset) * gradient.X + (y - (float)y_Offset) * gradient.Y);
                 }
 
                 public static float perlin(float x, float y)
@@ -2425,13 +2438,13 @@ namespace OpenTk26_3
                     float temp0, temp1, interpolate1, interpolate2, value;
 
                     //dot products find the value for the botton line of the square
-                    temp0 = DotProduct(x_Floor, y_Floor, x, y);
-                    temp1 = DotProduct(x_Ceiling, y_Floor, x, y);
+                    temp0 = Dot_position_random(x_Floor, y_Floor, x, y);
+                    temp1 = Dot_position_random(x_Ceiling, y_Floor, x, y);
                     interpolate1 = Lerp(temp0, temp1, x_Offset);
 
                     //dot products find the value for the botton line of the square
-                    temp0 = DotProduct(x_Floor, y_Ceiling, x, y);
-                    temp1 = DotProduct(x_Ceiling, y_Ceiling, x, y);
+                    temp0 = Dot_position_random(x_Floor, y_Ceiling, x, y);
+                    temp1 = Dot_position_random(x_Ceiling, y_Ceiling, x, y);
                     interpolate2 = Lerp(temp0, temp1, x_Offset);
 
                     value = Lerp(interpolate1, interpolate2, y_Offset);
