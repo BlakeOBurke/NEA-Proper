@@ -228,7 +228,7 @@ namespace OpenTk26_3
         static void FollowCam(ref camera cam, Kart car)
         {
             MouseState moose = Mouse.GetState();
-            cam.direction = new Vector3((float)Math.PI/10f,(float)Math.Atan2(-car.getForward().X, -car.getForward().Z), 0f);
+            cam.direction = new Vector3((float)Math.PI/ 10f, (float)Math.Atan2(-car.getForward().X, -car.getForward().Z), 0f);
 
 
             cam.camDistance -= (moose.ScrollWheelValue + MOUSEscroll);
@@ -886,7 +886,7 @@ namespace OpenTk26_3
             projector[2, 3] = (-2f * (far * near)) / (far - near);
             projector[3, 2] = -1f;
 
-            //return Matrix4.CreatePerspectiveFieldOfView(fov, a, near, far);
+
             return projector;
         }
 
@@ -1836,7 +1836,7 @@ namespace OpenTk26_3
                         int x = i / trackGrid;
                         int y = j / trackGrid;
                         x %= (gridDimension/trackGrid);
-                        y %= (gridDimension / trackGrid);
+                        y %= (gridDimension/trackGrid);
 
                         bool a = false;
                         if ("|" == track[y, x].name && (i % trackGrid > trackMin && i % trackGrid < trackMax))

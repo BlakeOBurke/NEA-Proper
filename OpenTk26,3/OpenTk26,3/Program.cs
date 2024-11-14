@@ -24,6 +24,12 @@ namespace OpenTk26_3
         public static float FinishedTime = 0;
 
         public static List<string> Inputs;
+        static void instrucions()
+        {
+            Console.WriteLine("");
+            Console.WriteLine("wasd to drive \nred = boost\nwhite = enlarge\bpurple = slow\ntake corners wide\ngo faster if you're on the track instead of the landscape");
+            Console.WriteLine("");
+        }
         static void Main(string[] args)
         {
             bool finishGame = false;
@@ -33,6 +39,9 @@ namespace OpenTk26_3
             {
                 switch(Menu())
                 {
+                    case 'I':
+                        instrucions();
+                        break;
                     default:
                         Console.WriteLine("enter a seed, press enter for a new course");
                         if(int.TryParse(Console.ReadLine(),out int seed))
@@ -346,12 +355,13 @@ namespace OpenTk26_3
         }
         public static char Menu()
         {
+            Console.WriteLine("Read Instructions 'I'");
             Console.WriteLine("Play Game 'P'");
             Console.WriteLine("View Leaderboard 'L'");
             Console.WriteLine("Ghost Mode 'G'");
             Console.WriteLine("Replay 'R'");
             Console.WriteLine("Exit 'X'");
-            return choiceMaker("PLGRX");
+            return choiceMaker("IPLGRX");
         } 
     }
 
