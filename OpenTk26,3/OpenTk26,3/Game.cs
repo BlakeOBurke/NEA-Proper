@@ -1871,7 +1871,7 @@ namespace OpenTk26_3
 
                         if (a)
                         {
-                            terrain.verts[(gridDimension + 1) * i + j].pos.Y += .15f;
+                            terrain.verts[(gridDimension + 1) * i + j].pos.Y += .35f;
                         }
                         else
                         {
