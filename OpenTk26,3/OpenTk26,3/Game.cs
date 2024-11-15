@@ -16,31 +16,31 @@ namespace OpenTk26_3
     {
         //self explanatory static variables
 
-        static bool Replay;
-        static List<string> Replay_inputs;
-        static List<string> record_inputs = new List<string>();
-        static bool Ghost;
+        static bool replay;
+        static List<string> replayInputs;
+        static List<string> recordInputs = new List<string>();
+        static bool ghost;
 
         public static int screenHeight;
         public static int screenWidth;
 
-        static int RandomSeed;
+        static int randomSeed;
         static Random rnd;
         static int MOUSEX, MOUSEY;
         static int MOUSEscroll = 0;
         static bool quickMov = false;
         static int frameCount = 0;
-        static int TotalframeCount;
-        static int TargetLaps = 2;
-        static bool Finished = false;
-        static float FinishTime;
+        static int totalframeCount;
+        static int targetLaps = 2;
+        static bool finished = false;
+        static float finishTime;
 
         static float maxCarAcceleration = .15f * 30;
         static float maxCarVelocity = 2f * 30;
 
         const float tStep = 1 / 30f;
         const float meter = 0.5f;
-        const float Gravity = -9.81f * 5;
+        const float gravity = -9.81f * 5;
 
         const float carScale = .9f;
 
@@ -48,7 +48,7 @@ namespace OpenTk26_3
         static Game.camera player = new Game.camera(0, 0, 0);
 
         Shader shader;
-        Color GhostColor = Color.GhostWhite;
+        Color ghostColor = Color.GhostWhite;
 
         static Terrain landscape;
         static Terrain racetrack;
@@ -57,59 +57,59 @@ namespace OpenTk26_3
         //in the constructors there are many arbitrary re-assignments. this is because some of these are static to the Game class and would persist between games, reseting them fixes this.
         public Game(int width, int height, int seed) : base(width, height, GraphicsMode.Default, "game")
         {
-            reset_statics(width,height,seed);
+            resetVariables(width,height,seed);
         }
         public Game(int width, int height, int seed, string mode) : base(width, height, GraphicsMode.Default, "game")
         {
-            reset_statics(width , height,seed);
+            resetVariables(width , height,seed);
 
             //change stuff based on gamemode
             if(mode == "R")
             {
-                Replay = true;
-                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
-                Ghost = false;
+                replay = true;
+                replayInputs = File.ReadAllLines(seed.ToString()).ToList();
+                ghost = false;
             }
             else if(mode == "G")
             {
-                Ghost = true;
-                Replay_inputs = File.ReadAllLines(seed.ToString()).ToList();
-                Replay = false;
+                ghost = true;
+                replayInputs = File.ReadAllLines(seed.ToString()).ToList();
+                replay = false;
             }
         }
-        void reset_statics(int width, int height, int seed)//stuff that needs to be static to the game class but also needs to be reset between each game
+        void resetVariables(int width, int height, int seed)//stuff that needs to be static to the game class but also needs to be reset between each game
         {
             if (seed % 2 == 0)
             {//grass
-                Terrain.LandColor = Color.FromArgb(0, 0, 180, 0);
-                Terrain.TrackColor = Color.DarkGreen;
+                Terrain.landColor = Color.FromArgb(0, 0, 180, 0);
+                Terrain.trackColor = Color.DarkGreen;
             }
             else
             {//sand
-                Terrain.LandColor = Color.SandyBrown;
-                Terrain.TrackColor = Color.Black;
+                Terrain.landColor = Color.SandyBrown;
+                Terrain.trackColor = Color.Black;
             }
-            RandomSeed = seed;
-            rnd = new Random(RandomSeed);
-            Item.itemRand = new Random(RandomSeed);
-            Decoration.decorRand = new Random(RandomSeed);
+            randomSeed = seed;
+            rnd = new Random(randomSeed);
+            Item.itemRand = new Random(randomSeed);
+            Decoration.decorRand = new Random(randomSeed);
 
             screenHeight = height;
             screenWidth = width;
-            Finished = false;
-            Item.Items.Clear();
-            Kart.Cars.Clear();
+            finished = false;
+            Item.items.Clear();
+            Kart.cars.Clear();
             Shape.shapes.Clear();
             player = new Game.camera(0, 0, 0);
-            TotalframeCount = 0;
-            record_inputs.Clear();
-            if (Replay_inputs != null)
+            totalframeCount = 0;
+            recordInputs.Clear();
+            if (replayInputs != null)
             {
-                Replay_inputs.Clear();
+                replayInputs.Clear();
             }
 
-            Replay = false;
-            Ghost = false;
+            replay = false;
+            ghost = false;
         }
         static Color randomColor()        //self explanatory
         {
@@ -197,11 +197,11 @@ namespace OpenTk26_3
 
             if (input.IsKeyDown(Key.T))
             {
-                player.zooooooom -= 0.00174533f * 4;
+                player.fov -= 0.00174533f * 4;
             }
             else if (input.IsKeyDown(Key.G))
             {
-                player.zooooooom += 0.00174533f * 4;
+                player.fov += 0.00174533f * 4;
             }
         } //camera lets you go anywhere, mostly left over from development
         static void FreeMouse(ref camera cam)
@@ -241,8 +241,8 @@ namespace OpenTk26_3
         static void World_Cam(ref camera cam)
         {
             float radius = 600f * meter;
-            cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*(0.5f)*TotalframeCount); 
-            cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*(0.5f)*TotalframeCount);
+            cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*(0.5f)*totalframeCount); 
+            cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*(0.5f)*totalframeCount);
             Collision(landscape, new Vector3(cam.pos.X, -100, cam.pos.Z), out float height, out Vector3 normal);
             cam.pos.Y = height + 150f;
 
@@ -301,7 +301,7 @@ namespace OpenTk26_3
         {
             try
             {
-                string[] inputs = Replay_inputs[TotalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] inputs = replayInputs[totalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 if (inputs.Contains("W"))
                 {
                     if (inputs.Contains("S"))
@@ -324,7 +324,7 @@ namespace OpenTk26_3
                     {
                         car.angle.Y += car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                     }
-                    car.velocity_multi = 0.85f;
+                    car.velocityMulti = 0.85f;
                 }
                 else if (inputs.Contains("D"))
                 {
@@ -332,11 +332,11 @@ namespace OpenTk26_3
                     {
                         car.angle.Y -= car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                     }
-                    car.velocity_multi = 0.85f;
+                    car.velocityMulti = 0.85f;
                 }
                 else
                 {
-                    car.velocity_multi = 1;
+                    car.velocityMulti = 1;
                 }
             }
             catch
@@ -346,24 +346,24 @@ namespace OpenTk26_3
         } //similar to DriveCar but uses text file of replay as a substitute for keyboard input
         static void DriveCar(Kart car, KeyboardState input)
         {
-            record_inputs.Add(" ");
+            recordInputs.Add(" ");
             if (input.IsKeyDown(Key.Up) || input.IsKeyDown(Key.W))
             {
                 if (input.IsKeyDown(Key.S) || input.IsKeyDown(Key.Down))
                 {
                     car.velocity -= car.getForward() * maxCarAcceleration * 0.5f;
-                    record_inputs[TotalframeCount - 1] += "W S ";
+                    recordInputs[totalframeCount - 1] += "W S ";
                 }
                 else
                 {
                     car.velocity -= car.getForward() * maxCarAcceleration;
-                    record_inputs[TotalframeCount - 1] += "W ";
+                    recordInputs[totalframeCount - 1] += "W ";
                 }
             }
             else if (input.IsKeyDown(Key.Down) || input.IsKeyDown(Key.S))
             {
                 car.velocity += car.getForward() * maxCarAcceleration;
-                record_inputs[TotalframeCount - 1] += "S ";
+                recordInputs[totalframeCount - 1] += "S ";
             }
 
             if (input.IsKeyDown(Key.Right) || input.IsKeyDown(Key.D))
@@ -372,8 +372,8 @@ namespace OpenTk26_3
                 {
                     car.angle.Y -= car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                 }
-                car.velocity_multi = 0.85f;
-                record_inputs[TotalframeCount - 1] += "D ";
+                car.velocityMulti = 0.85f;
+                recordInputs[totalframeCount - 1] += "D ";
             }
 
             else if (input.IsKeyDown(Key.Left) || input.IsKeyDown(Key.A))
@@ -382,12 +382,12 @@ namespace OpenTk26_3
                 {
                     car.angle.Y += car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
                 }
-                car.velocity_multi = 0.85f;
-                record_inputs[TotalframeCount - 1] += "A ";
+                car.velocityMulti = 0.85f;
+                recordInputs[totalframeCount - 1] += "A ";
             }
             else
             {
-                car.velocity_multi = 1;
+                car.velocityMulti = 1;
             }
         } //affects the cars velocity based on keyboard inputs
         void MoveCars(Kart car, bool IsGhost) //terrain collision + checkpoint + speed modifiers + actually moving the car 
@@ -396,11 +396,11 @@ namespace OpenTk26_3
             //get the angle from the landscape
             //based on what height is higher the car is either on or off the grass
             //(2x 128*128 grids of squares. based on the track that's generated by wave function collapse the areas of the 'track' grid are 'pulled up' through the 'landscape' grid so the method to determine on track or not works)
-            Collide_With_angle(racetrack, car/*, out Vector2 raceAngle,*/ , out float tHeight);
-            Collide_With_angle(landscape, car/*, out Vector2 grassAngle,*/ , out float lHeight);
+            CollideAngle(racetrack, car/*, out Vector2 raceAngle,*/ , out float tHeight);
+            CollideAngle(landscape, car/*, out Vector2 grassAngle,*/ , out float lHeight);
 
             //do some gravity yeah
-            car.centre.Y += Gravity * tStep;
+            car.centre.Y += gravity * tStep;
 
             if (tHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y || lHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y)
             {
@@ -416,8 +416,8 @@ namespace OpenTk26_3
                 car.onGrass = false;
 
                 Vector2 carPos = car.centre.Zx;
-                Vector2 Checkpos = terrain2World(racetrack.checkpointPos);
-                Vector2 Startpos = terrain2World(racetrack.startPos);
+                Vector2 Checkpos = Terrain2World(racetrack.checkpointPos);
+                Vector2 Startpos = Terrain2World(racetrack.startPos);
                 Checkpos = Checkpos.Yx;
                 Startpos = Startpos.Yx;
                 //fix the startpos and checkpoint pos to align them to world grid
@@ -440,8 +440,8 @@ namespace OpenTk26_3
                     {
                         if (car.checkState == 'C')
                         {
-                            car.Laps++;
-                            Console.WriteLine(car.Laps + "/" + TargetLaps);
+                            car.laps++;
+                            Console.WriteLine(car.laps + "/" + targetLaps);
                             car.checkState = 'S';
                         }
                     }
@@ -452,7 +452,7 @@ namespace OpenTk26_3
             //car slows down over time, basically this is friction
             car.velocity *= 0.95f;
 
-            float velocity_multi = car.velocity_multi;
+            float velocity_multi = car.velocityMulti;
 
             //if car on grass AND not being affected by a boost or giant item then slow down
             if (car.onGrass == true && car.big <= 0 && (car.boost <= 0 || car.boostDirection == -1))
@@ -509,8 +509,8 @@ namespace OpenTk26_3
 
 
             //collide after movement to fix visual issues
-            Collide_With_angle(racetrack, car/*, out Vector2 raceAngle,*/ , out tHeight);
-            Collide_With_angle(landscape, car/*, out Vector2 grassAngle,*/ , out lHeight);
+            CollideAngle(racetrack, car/*, out Vector2 raceAngle,*/ , out tHeight);
+            CollideAngle(landscape, car/*, out Vector2 grassAngle,*/ , out lHeight);
             if (tHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y || lHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y)
             {
                 car.centre.Y = (float)Math.Max(lHeight, tHeight) + car.dimensions.Y / 2f;
@@ -532,15 +532,15 @@ namespace OpenTk26_3
 
             MOUSEX = 0; MOUSEY = 0;
 
-            Kart.Cars.Add(new Kart(randomColor()));
-            Kart.Cars.Last().Scale(carScale);
-            Kart.Cars.Last().SetPos(new Vector3(0, 40, 0));
+            Kart.cars.Add(new Kart(randomColor()));
+            Kart.cars.Last().Scale(carScale);
+            Kart.cars.Last().SetPos(new Vector3(0, 40, 0));
 
-            if (Ghost)
+            if (ghost)
             {//in ghost mode a second car is needed, the cars and all shapes use OOP so this is simple
-                Kart.Cars.Add(new Kart(GhostColor));
-                Kart.Cars.Last().Scale(carScale);
-                Kart.Cars.Last().SetPos(new Vector3(0, 40, 0));
+                Kart.cars.Add(new Kart(ghostColor));
+                Kart.cars.Last().Scale(carScale);
+                Kart.cars.Last().SetPos(new Vector3(0, 40, 0));
             }
 
             //starts the random seed for the terrain stuff, user will be promted to enter one
@@ -552,23 +552,23 @@ namespace OpenTk26_3
             landscape.terrain.SetPos(landscape.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
             racetrack.terrain.SetPos(racetrack.terrain.centre - new Vector3(320 + 128, 0, 320 + 128));
 
-            Vector2 pos = terrain2World(racetrack.startPos);
-            if (Ghost)
+            Vector2 pos = Terrain2World(racetrack.startPos);
+            if (ghost)
             {
-                Kart.Cars[1].SetPos(new Vector3(pos.X, 0, pos.Y));
+                Kart.cars[1].SetPos(new Vector3(pos.X, 0, pos.Y));
             }
-            Kart.Cars[0].SetPos(new Vector3(pos.X, 0, pos.Y));
+            Kart.cars[0].SetPos(new Vector3(pos.X, 0, pos.Y));
 
             //some global/ classglobal variables appear to persist between games, reseting randoms fixes this
 
-            Item.itemRand = new Random(RandomSeed);
+            Item.itemRand = new Random(randomSeed);
             for (int i = 0; i < 20; i++)
             {
                 Item.SpawnItem();
             }
 
             Decoration.decor.Clear();
-            if(RandomSeed%2 == 0)
+            if(randomSeed%2 == 0)
             {
                 int trees = Decoration.decorRand.Next(15, 45);
                 for(int i  = 0; i < trees; i++)
@@ -590,10 +590,10 @@ namespace OpenTk26_3
         //built in OpenTK virtual function, run when the window is closed. if the track has been finished then the time and recorded inputs are sent to Program.cs to be saved in a leaderboard, if not a time of 0 is given which is caught in Program.cs
         protected override void OnUnload(EventArgs e)
         {
-            if (Finished)
+            if (finished)
             {
-                Program.setTime(FinishTime);
-                Program.RecordInputs(record_inputs);
+                Program.setTime(finishTime);
+                Program.RecordInputs(recordInputs);
             }
             else
             {
@@ -611,7 +611,7 @@ namespace OpenTk26_3
             base.OnUpdateFrame(e);
 
 
-            TotalframeCount++;
+            totalframeCount++;
             frameCount++;
             frameCount = frameCount % 360;
 
@@ -623,65 +623,65 @@ namespace OpenTk26_3
                 Exit();
             }
 
-            carAndCameraStuff(input);
+            carAndCamera(input);
 
             //check if the first car is finished
-            if (Kart.Cars[0].Laps == TargetLaps && !Finished)
+            if (Kart.cars[0].laps == targetLaps && !finished)
             {
                 //based on computer performance a stopwatch would have variable time, using gameupdates is more reliable
-                FinishTime = TotalframeCount/30f;
-                float timeTest = Replay ? new Program.Leaderboard(RandomSeed.ToString()).Fastest().time : FinishTime;
+                finishTime = totalframeCount/30f;
+                float timeTest = replay ? new Program.Leaderboard(randomSeed.ToString()).Fastest().time : finishTime;
                 Console.WriteLine($"Finished with a time of {timeTest} seconds!!!");
-                Finished = true;
+                finished = true;
             }
 
             handleItems();
         }
-        void carAndCameraStuff(KeyboardState input) //car and camera stuff for the on update frame
+        void carAndCamera(KeyboardState input) //car and camera stuff for the on update frame
         {
             //if not finsihed, cars need to move
-            if (!Finished)
+            if (!finished)
             {
                 //in replay mode, use replay car to undo the replay file
                 //in ghost mode, let the player drive the first car [0] and use the replay for the second car [1]
                 //otherwise just let the player control the car 
                 //finally set the camera to follow car[0]
-                if (Replay)
+                if (replay)
                 {
-                    ReplayCar(Kart.Cars[0]);
-                    LooseFollowCam(ref player, Kart.Cars[0]);
+                    ReplayCar(Kart.cars[0]);
+                    LooseFollowCam(ref player, Kart.cars[0]);
                 }
-                else if (Ghost)
+                else if (ghost)
                 {
-                    DriveCar(Kart.Cars[0], input);
-                    ReplayCar(Kart.Cars[1]);
-                    MoveCars(Kart.Cars[1], true);
+                    DriveCar(Kart.cars[0], input);
+                    ReplayCar(Kart.cars[1]);
+                    MoveCars(Kart.cars[1], true);
 
-                    if (TotalframeCount % 2 == 0)
+                    if (totalframeCount % 2 == 0)
                     {
-                        Kart.Cars.Add(new Kart(GhostColor));
-                        Kart.Cars.Last().Scale(carScale);
-                        Kart.Cars.Last().SetPos(Kart.Cars[1].centre);
-                        Kart.Cars.Last().setScale(Kart.Cars[1].scale[0]);
-                        Kart.Cars.Last().angle = (Kart.Cars[1].angle);
+                        Kart.cars.Add(new Kart(ghostColor));
+                        Kart.cars.Last().Scale(carScale);
+                        Kart.cars.Last().SetPos(Kart.cars[1].centre);
+                        Kart.cars.Last().setScale(Kart.cars[1].scale[0]);
+                        Kart.cars.Last().angle = (Kart.cars[1].angle);
                         //cool trail of cars in ghost mode
-                        if (Kart.Cars.Count() > 30)
+                        if (Kart.cars.Count() > 30)
                         {
-                            Kart.Cars.RemoveAt(2);
+                            Kart.cars.RemoveAt(2);
                         }
-                        for (int i = 2; i < Kart.Cars.Count(); i++)
+                        for (int i = 2; i < Kart.cars.Count(); i++)
                         {
-                            Kart.Cars.Last().scale *= 0.995f;
+                            Kart.cars.Last().scale *= 0.995f;
                         }
                     }
-                    FollowCam(ref player, Kart.Cars[0]);
+                    FollowCam(ref player, Kart.cars[0]);
                 }
                 else
                 {
-                    DriveCar(Kart.Cars[0], input);
-                    FollowCam(ref player, Kart.Cars[0]);
+                    DriveCar(Kart.cars[0], input);
+                    FollowCam(ref player, Kart.cars[0]);
                 }
-                MoveCars(Kart.Cars[0], false);
+                MoveCars(Kart.cars[0], false);
 
             }
             else
@@ -693,32 +693,32 @@ namespace OpenTk26_3
         void handleItems()//does everything for items in OmUpdateFrame
         {
             //in replays and standard mode the items are removed after they are used. in ghost mode, the ghost car does not use up items becuase that would affect the main players gameplay
-            if ((Ghost) && !Finished)
+            if ((ghost) && !finished)
             {
                 try//catches the index out of range exception from the ghost car finishing before the player and so trying to get instructions when there aren't any
                 {
-                    string[] items = Replay_inputs[TotalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    string[] items = replayInputs[totalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     if (items.Contains("_B_"))
                     {
-                        Boost.Consumed(Kart.Cars[1]);
+                        Boost.Consumed(Kart.cars[1]);
                     }
                     if (items.Contains("_G_"))
                     {
-                        Giant.Consumed(Kart.Cars[1]);
+                        Giant.Consumed(Kart.cars[1]);
                     }
                     if (items.Contains("_S_"))
                     {
-                        Slow.Consumed(Kart.Cars[1]);
+                        Slow.Consumed(Kart.cars[1]);
                     }
                 }
                 catch { }
 
             }
-            for (int i = 0; i < Item.Items.Count; i++)
+            for (int i = 0; i < Item.items.Count; i++)
             {
-                if (Item.Items[i].Collide(Kart.Cars[0]))
+                if (Item.items[i].Collide(Kart.cars[0]))
                 {
-                    Item.Items[i].Consume(Kart.Cars[0]);
+                    Item.items[i].Consume(Kart.cars[0]);
                     i--;
                 }
             }
@@ -732,17 +732,31 @@ namespace OpenTk26_3
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             List<Shape> models = new List<Shape>();
-            models.AddRange(Shape.Models);
-            JiggleItems(ref models);
-            //models.AddRange(Kart.Cars);
-            models.Add(landscape.terrain);
-            models.Add(racetrack.terrain);
+            models.AddRange(Shape.models);
 
-            models.AddRange(Kart.Cars);
-            models.AddRange(Decoration.decor);
+            Matrix4 camMatrix = player.CameraMatrix();
+            //for(int i = 0; i < Shape.models.Count(); i++)
+            //{
+            //    drawObj(Shape.models[i], camMatrix);
+            //}
+            foreach (Kart car in Kart.cars)
+            {
+                drawObj(car, camMatrix);
+            }
+            drawObj(landscape.terrain,camMatrix);
+            drawObj(racetrack.terrain,camMatrix);
+            foreach (Item item in Item.items)
+            {//make the items bob up and down and spin for visual splendor 
+                item.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
+                //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
+                item.angle += 0.0174533f * item.rotateOffset;
 
-            //draw every shape, OOP helps as terrain and item and kart inherit from shape so can be added to <models>, its not very slow because its only adding object references to the range
-            drawObj(models, CameraMatrix(player));
+                drawObj(item, camMatrix);
+            }
+            foreach(Decoration decor in Decoration.decor)
+            {
+                drawObj(decor,camMatrix);
+            }
 
             //reset the shader
             shader.Dispose();
@@ -750,14 +764,12 @@ namespace OpenTk26_3
             this.SwapBuffers();
 
         }
-        void drawObj(List<Shape> a, Matrix4 proj)
+        void drawObj(Shape a, Matrix4 proj)
         {//proj is the projection matrix, the same for all objects
-            for (int i = 0; i < a.Count(); i++)
-            {
-                Matrix4 model = a[i].modelMat();
+                Matrix4 model = a.modelMat();
                 //get the model matrix
 
-                Matrix4 aproj = Matrix4.CreateScale(a[i].scale) * model * proj;
+                Matrix4 aproj = Matrix4.CreateScale(a.scale) * model * proj;
                 //using matrix multiplication to apply the transformations
 
                 int uniID = GL.GetUniformLocation(3, "projection");
@@ -768,26 +780,25 @@ namespace OpenTk26_3
 
 
                 //instruct the GPU on what data to draw
-                GL.BindVertexArray(a[i].VertexArrayObject);
+                GL.BindVertexArray(a.vertexArrayObject);
 
-                GL.BindBuffer(BufferTarget.ArrayBuffer, a[i].VertexBufferObject);
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, a[i].ElementBufferObject);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, a.vertexBufferObject);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, a.elementBufferObject);
 
                 //defines how data is sent to the GPU, 6* 32 bit numbers, a 3*32 bits for colour, 3*32 bits for location
-                GL.VertexAttribPointer(a[i].VertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                GL.EnableVertexAttribArray(a[i].VertexBufferObject);
+                GL.VertexAttribPointer(a.vertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+                GL.EnableVertexAttribArray(a.vertexBufferObject);
 
-                GL.VertexAttribPointer(a[i].ElementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                GL.EnableVertexAttribArray(a[i].ElementBufferObject);
+                GL.VertexAttribPointer(a.elementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+                GL.EnableVertexAttribArray(a.elementBufferObject);
 
                 //gpu things
                 shader.Use();
-                GL.DrawElements(PrimitiveType.Triangles, a[i].count, DrawElementsType.UnsignedInt, 0);
-            }
+                GL.DrawElements(PrimitiveType.Triangles, a.count, DrawElementsType.UnsignedInt, 0);
         } //draw stuff
         void JiggleItems(ref List<Shape> models)
         {
-            foreach (Item item in Item.Items)
+            foreach (Item item in Item.items)
             {//make the items bob up and down and spin for visual splendor 
                 item.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
                 //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
@@ -840,14 +851,14 @@ namespace OpenTk26_3
             public Vector2 Ddirection;
             public Vector3 forward;
             public float dx, dy, dz;
-            public float zooooooom;
+            public float fov;
             public camera(float x, float y, float z)
             {
                 this.pos = new Vector3(x, y, z);
                 this.direction = new Vector3(0, 0, 0);
                 this.Ddirection = new Vector2(0, (float)Math.PI);
                 dx = 0; dy = 0; dz = 1;
-                this.zooooooom = (float)(0.0174533 * 60);
+                this.fov = (float)(0.0174533 * 60);
                 forward = new Vector3(0, 0, 1);
             }
 
@@ -860,79 +871,81 @@ namespace OpenTk26_3
             //these three change FOV based on the speed and slow powerups
             public void ZoomFast()
             {
-                zooooooom = (float)(0.0174533 * 55);
+                fov = (float)(0.0174533 * 55);
             }
             public void ZoomReset()
             {
-                zooooooom = (float)(0.0174533 * 60);
+                fov = (float)(0.0174533 * 60);
             }
             public void ZoomSlow()
             {
-                zooooooom = (float)(0.0174533 * 65);
+                fov = (float)(0.0174533 * 65);
             }
-        }
 
-        static Matrix4 ProjectionMatrix(float near/*distance of near plane of frustum*/, float far/*distance of far plane of frustum*/, float fov, float a /*aspect ratio*/)
-        {
-            //most of the matrix is 0's so use built in function 
-            //most of the maths is in the write up
-            Matrix4 projector = Matrix4.Zero;
-
-            //Matrix4.CreatePerspectiveFieldOfView();
-
-            projector[0, 0] = (float)((2f * near)/ Math.Tan(fov/2f));
-            projector[1, 1] = (float)((a * 2f * near)/ Math.Tan(fov / 2f));
-            projector[2, 2] = (-far - near) / (far - near);
-            projector[2, 3] = (-2f * (far * near)) / (far - near);
-            projector[3, 2] = -1f;
-
-
-            return projector;
-        }
-
-        public static Matrix4 CameraMatrix(camera cam) // the projection matrix, if the game is over its slightly different as it looks to the centre of the world
-        {
-            if (Finished == true)
+            Matrix4 ProjectionMatrix(float near/*distance of near plane of frustum*/, float far/*distance of far plane of frustum*/, float fov, float a /*aspect ratio*/)
             {
-                Vector3 forww = -cam.pos;
-                //forww[0] += cam.pos[0]; forww[1] += cam.pos[1]; forww[2] += cam.pos[2];
+                //most of the matrix is 0's so use built in function 
+                //most of the maths is in the write up
+                Matrix4 projector = Matrix4.Zero;
+
+                //Matrix4.CreatePerspectiveFieldOfView();
+
+                projector[0, 0] = (float)((2f * near) / Math.Tan(fov / 2f));
+                projector[1, 1] = (float)((a * 2f * near) / Math.Tan(fov / 2f));
+                projector[2, 2] = (-far - near) / (far - near);
+                projector[2, 3] = (-2f * (far * near)) / (far - near);
+                projector[3, 2] = -1f;
+
+
+                return projector;
+            }
+
+            public Matrix4 CameraMatrix() // the projection matrix, if the game is over its slightly different as it looks to the centre of the world
+            {
+                if (finished == true)
+                {
+                    Vector3 forww = -this.pos;
+                    //forww[0] += cam.pos[0]; forww[1] += cam.pos[1]; forww[2] += cam.pos[2];
+                    //MY_vector3 right = MY_vector3.cross(forw, new MY_vector3(0,-1,0)).normalise();
+                    //MY_vector3 upp = MY_vector3.cross(right, forw);
+                    Matrix4 camera = Matrix4.LookAt(new Vector3(this.pos[0], this.pos[1], this.pos[2]), new Vector3(forww[0], forww[1], forww[2]), new Vector3(0, 1, 0));
+
+                    //camer.Transpose();
+                    if (this.fov > Math.PI - 0.001f)
+                    {
+                        this.fov = (float)Math.PI - 0.001f;
+                    }
+                    else if (this.fov < 0.0001f)
+                    {
+                        this.fov = 0.0001f;
+                    }
+                    //camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
+                    camera = camera * ProjectionMatrix(.5f, 1000f, this.fov, screenWidth / (float)screenHeight);
+                    return camera;
+
+                }
+                Vector3 forw = this.camforward();
+                forw[0] += this.pos[0]; forw[1] += this.pos[1]; forw[2] += this.pos[2];
                 //MY_vector3 right = MY_vector3.cross(forw, new MY_vector3(0,-1,0)).normalise();
                 //MY_vector3 upp = MY_vector3.cross(right, forw);
-                Matrix4 camera = Matrix4.LookAt(new Vector3(cam.pos[0], cam.pos[1], cam.pos[2]), new Vector3(forww[0], forww[1], forww[2]), new Vector3(0, 1, 0));
+                Matrix4 camer = Matrix4.LookAt(new Vector3(this.pos[0], this.pos[1], this.pos[2]), new Vector3(forw[0], forw[1], forw[2]), new Vector3(0, 1, 0));
 
                 //camer.Transpose();
-                if (cam.zooooooom > Math.PI - 0.001f)
+                if (this.fov > Math.PI - 0.001f)
                 {
-                    cam.zooooooom = (float)Math.PI - 0.001f;
+                    this.fov = (float)Math.PI - 0.001f;
                 }
-                else if (cam.zooooooom < 0.0001f)
+                else if (this.fov < 0.0001f)
                 {
-                    cam.zooooooom = 0.0001f;
+                    this.fov = 0.0001f;
                 }
-                //camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
-                camera = camera * ProjectionMatrix(.5f, 1000f, cam.zooooooom, screenWidth / (float)screenHeight);
-                return camera;
-
+                //camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
+                camer = camer * ProjectionMatrix(3.5f, 1000f, this.fov, screenWidth / (float)screenHeight);
+                return camer;
             }
-            Vector3 forw = cam.camforward();
-            forw[0] += cam.pos[0]; forw[1] += cam.pos[1]; forw[2] += cam.pos[2];
-            //MY_vector3 right = MY_vector3.cross(forw, new MY_vector3(0,-1,0)).normalise();
-            //MY_vector3 upp = MY_vector3.cross(right, forw);
-            Matrix4 camer = Matrix4.LookAt(new Vector3(cam.pos[0], cam.pos[1], cam.pos[2]), new Vector3(forw[0], forw[1], forw[2]), new Vector3(0, 1, 0));
-
-            //camer.Transpose();
-            if (cam.zooooooom > Math.PI - 0.001f)
-            {
-                cam.zooooooom = (float)Math.PI - 0.001f;
-            }
-            else if (cam.zooooooom < 0.0001f)
-            {
-                cam.zooooooom = 0.0001f;
-            }
-            //camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
-            camer = camer * ProjectionMatrix(3.5f, 1000f, cam.zooooooom, screenWidth / (float)screenHeight);
-            return camer;
         }
+
+
 
         //a shader is just a function for the gpu to be run in parralel
         //my program has a vertex shader for every vertex and a fragment shader for every pixel
@@ -1028,10 +1041,9 @@ namespace OpenTk26_3
             }
         }
 
-        static Vector2 terrain2World(Vector2 pos)
+        static Vector2 Terrain2World(Vector2 pos)
         {
-            pos = pos * Terrain.squareSize; //+ new Vector2(128, 128);
-            //Console.WriteLine(pos.X + "  " + pos.Y);
+            pos = pos * Terrain.squareSize;
 
             return pos;
         } //takes the wave function collapse track info into the 3D space
@@ -1051,12 +1063,12 @@ namespace OpenTk26_3
             public Vector3 dimensions;
 
             public static List<int> shapes = new List<int>();
-            public static List<Shape> Models = new List<Shape>();
+            public static List<Shape> models = new List<Shape>();
 
 
-            public int VertexBufferObject;
-            public int ElementBufferObject;
-            public int VertexArrayObject;
+            public int vertexBufferObject;
+            public int elementBufferObject;
+            public int vertexArrayObject;
 
             public Shape(string path, Color color)
             {
@@ -1159,9 +1171,9 @@ namespace OpenTk26_3
             public void doBuffers()
             {
 
-                this.VertexBufferObject = GL.GenBuffer();
-                this.ElementBufferObject = GL.GenBuffer();
-                this.VertexArrayObject = GL.GenVertexArray();
+                this.vertexBufferObject = GL.GenBuffer();
+                this.elementBufferObject = GL.GenBuffer();
+                this.vertexArrayObject = GL.GenVertexArray();
 
                 resetBuffers();
             }
@@ -1171,12 +1183,12 @@ namespace OpenTk26_3
                 uint[] indices = triangle;
 
 
-                GL.BindVertexArray(VertexArrayObject);
+                GL.BindVertexArray(vertexArrayObject);
 
-                GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferObject);
                 GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
 
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, elementBufferObject);
                 GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
 
                 GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
@@ -1329,14 +1341,11 @@ namespace OpenTk26_3
             {
                 Shape shapee = this;
                 Matrix4 mov = Matrix4.CreateRotationZ(this.angle[2]) * Matrix4.CreateRotationY(this.angle[1]) * Matrix4.CreateRotationX(this.angle[0]) * Matrix4.CreateTranslation(this.centre);
-                //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
                 return mov;
             }
 
             public Vector3 getForward()
             {
-                //Matrix4 rotation = Matrix4.CreateRotationZ(-angle[2]) * Matrix4.CreateRotationY(-angle[1]) * Matrix4.CreateRotationX(-angle[0]);
-                //Vector4 ouut = (rotation * new Vector4(new Vector3(0, 0, 1), 1));
                 Matrix3 rotation = Matrix3.CreateRotationZ(-angle[2]) * Matrix3.CreateRotationY(-angle[1]) * Matrix3.CreateRotationX(-angle[0]);
                 Vector3 ouut = (rotation * new Vector3(0, 0, 1));
                 return ouut;
@@ -1352,7 +1361,7 @@ namespace OpenTk26_3
             {
                 //this.shape = new Shape(a, b);
 
-                Items.Add(this);
+                items.Add(this);
                 this.Scale(meter * 2);
                 //place on track function
 
@@ -1369,11 +1378,11 @@ namespace OpenTk26_3
 
             public virtual void Consume(Kart car)
             {
-                Items.Remove(this);
+                items.Remove(this);
             }
             public virtual void Delete()
             {
-                Items.Remove(this);
+                items.Remove(this);
             }
             public bool Collide(Shape shape)
             {
@@ -1384,20 +1393,20 @@ namespace OpenTk26_3
                 return false;
             }
 
-            public static List<Item> Items = new List<Item>();
+            public static List<Item> items = new List<Item>();
 
             public static void SpawnItem()
             {
                 switch (itemRand.Next(0, 4))
                 {
                     case 0:
-                        Items.Add(new Boost());
+                        items.Add(new Boost());
                         break;
                     case 1:
-                        Items.Add(new Slow());
+                        items.Add(new Slow());
                         break;
                     case 2:
-                        Items.Add(new Giant());
+                        items.Add(new Giant());
                         break;
                 }
                 //Items.Add(new Microplastic());
@@ -1410,27 +1419,12 @@ namespace OpenTk26_3
                 {
                     centre = new Vector3(itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
 
-
-                    ////
-                    //tripleCollide(landscape, this.shape, out float gHeight);
-                    //tripleCollide(racetrack, this.shape, out float tHeight);
-                    //if (tHeight > gHeight)
-                    //{
-                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + tHeight;
-                    //}
-                    //else
-                    //{
-                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + gHeight;
-                    //}
-                    //return true;
-                    ////
-
-                    Collide_With_angle(landscape, this, out float gHeight);
-                    Collide_With_angle(racetrack, this, out float tHeight);
+                    CollideAngle(landscape, this, out float gHeight);
+                    CollideAngle(racetrack, this, out float tHeight);
                     if (tHeight > gHeight)
                     {
                         centre.Y = dimensions.Y * 2 + tHeight;
-                        foreach (Item item in Items)
+                        foreach (Item item in items)
                         {
                             if (item != this)
                             {
@@ -1465,9 +1459,9 @@ namespace OpenTk26_3
             {
                 car.boostDirection = 1;
                 car.boost = (1 * (int)(1 / tStep));
-                if (!Replay)
+                if (!replay)
                 {
-                    record_inputs[TotalframeCount - 1] += "_B_ ";
+                    recordInputs[totalframeCount - 1] += "_B_ ";
                 }
                 base.Consume(car);
             }
@@ -1490,9 +1484,9 @@ namespace OpenTk26_3
                 {
                     car.boostDirection = -1;
                     car.boost = (1 * (int)(1 / tStep));
-                    if (!Replay)
+                    if (!replay)
                     {
-                        record_inputs[TotalframeCount - 1] += "_S_ ";
+                        recordInputs[totalframeCount - 1] += "_S_ ";
                     }
                     base.Consume(car);
                 }
@@ -1520,9 +1514,9 @@ namespace OpenTk26_3
             public override void Consume(Kart car)
             {
                 car.big = (2 * (int)(1 / tStep));
-                if (!Replay)
+                if (!replay)
                 {
-                    record_inputs[TotalframeCount - 1] += "_G_ ";
+                    recordInputs[totalframeCount - 1] += "_G_ ";
                 }
                 base.Consume(car);
             }
@@ -1535,7 +1529,7 @@ namespace OpenTk26_3
 
         class Decoration : Shape
         {
-            public static Random decorRand = new Random(RandomSeed);
+            public static Random decorRand = new Random(randomSeed);
             public static List<Decoration> decor = new List<Decoration>();
             public Decoration(string path, Color color) : base(path, color)
             {
@@ -1547,7 +1541,7 @@ namespace OpenTk26_3
                this.Scale(10f + (float)rnd.NextDouble());
             }
 
-            public bool PlaceItem()
+            public bool PlaceItem()// same as Item.PlaceItem except on path instead of track
             {
                 bool tooClose = false;
                 int tryCount = 0;
@@ -1555,23 +1549,8 @@ namespace OpenTk26_3
                 {
                     this.centre = new Vector3(decorRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, decorRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
 
-
-                    ////
-                    //tripleCollide(landscape, this.shape, out float gHeight);
-                    //tripleCollide(racetrack, this.shape, out float tHeight);
-                    //if (tHeight > gHeight)
-                    //{
-                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + tHeight;
-                    //}
-                    //else
-                    //{
-                    //    this.shape.centre.Y = shape.dimensions.Y * 2 + gHeight;
-                    //}
-                    //return true;
-                    ////
-
-                    Collide_With_angle(landscape, this, out float gHeight);
-                    Collide_With_angle(racetrack, this, out float tHeight);
+                    CollideAngle(landscape, this, out float gHeight);
+                    CollideAngle(racetrack, this, out float tHeight);
                     if (tHeight < gHeight)
                     {
                         this.centre.Y = this.dimensions.Y * 2 + tHeight;
@@ -1605,11 +1584,11 @@ namespace OpenTk26_3
             public bool bigged = false;
             public int boost = 0;
             public int boostDirection = 0;
-            public float velocity_multi = 1f;
+            public float velocityMulti = 1f;
             public bool onGrass = false;
             public char checkState = 'S';
-            public int Laps = 0;
-            public static List<Kart> Cars = new List<Kart>();
+            public int laps = 0;
+            public static List<Kart> cars = new List<Kart>();
             public Kart(Color color) : base("Kart.obj", color) { GetDimension(); normal = new Vector3(0, 1, 0); }
             public override void Scale(float scale)
             {
@@ -1639,7 +1618,7 @@ namespace OpenTk26_3
         }
 
 
-        static void Collide_With_angle(Terrain terrain, Shape Shape, out float height)
+        static void CollideAngle(Terrain terrain, Shape Shape, out float height)
         {
 
             Collision(terrain, Shape.centre, out float height1, out Vector3 normal);
@@ -1649,7 +1628,7 @@ namespace OpenTk26_3
             Shape.normal = normal.Normalized();
         }
         
-        static float[] barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 position)//gets the barycentric coordinates of a point on a triangle for use in the smooth terrain collision
+        static float[] Barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 position)//gets the barycentric coordinates of a point on a triangle for use in the smooth terrain collision
         {
             //since the terrain is scaled, it needs to be resized
             A *= Terrain.squareSize;
@@ -1728,7 +1707,7 @@ namespace OpenTk26_3
                 //c[1] = terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos;
                 //c[2] = terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos;
                 //barry = barycentric(terrain.terrain.verts[X_ * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
-                barry = barycentric(c[0], c[1], c[2], B);
+                barry = Barycentric(c[0], c[1], c[2], B);
                 normal = Vector3.Cross(c[2] - c[0], c[1] - c[0]);
             }
             else
@@ -1745,7 +1724,7 @@ namespace OpenTk26_3
 
 
                 //barry = barycentric(terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_ + 1].pos, terrain.terrain.verts[(X_ + 1) * Terrain.gridDimension + Z_].pos, terrain.terrain.verts[X_ * Terrain.gridDimension + Z_ + 1].pos, B);
-                barry = barycentric(c[0], c[1], c[2], B);
+                barry = Barycentric(c[0], c[1], c[2], B);
                 normal = Vector3.Cross(c[1] - c[0], c[2] - c[0]);
             }
 
@@ -1757,24 +1736,24 @@ namespace OpenTk26_3
         class Terrain //perlin noise and terrain stuff
         {
 
-            public static Random rand;
+            static Random rand;
 
             public Shape terrain;
             public static int gridDimension = 128;
-            public static float HeightMulti = 3.5f;
+            public static float heightMulti = 3.5f;
             public static int trackSize = 8;
             public static int squareSize = 5;
             float[,] heights = new float[gridDimension+1, gridDimension+1];
             public Vector2 startPos;
             public Vector2 checkpointPos;
             public static Vector2 offset;
-            public static Color LandColor;
-            public static Color TrackColor;
-            //string path = "128_good.obj";
+            public static Color landColor;
+            public static Color trackColor;
             string path = "129_Terrain_good.obj";
+
             public static void getRan() //moves some distance away for the perlin noise
             {
-                rand = new Random(RandomSeed);
+                rand = new Random(randomSeed);
                 offset = new Vector2(rand.Next(0, 1000), rand.Next(0, 1000));
             }
 
@@ -1798,7 +1777,7 @@ namespace OpenTk26_3
                 {
                     for (int j = 0; j < heights.GetLength(1); j++)
                     {
-                        terrain.verts[(gridDimension+1) * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * HeightMulti * meter;
+                        terrain.verts[(gridDimension+1) * (i) + j].pos.Y += (float)Math.Pow(Math.E, heights[i, j]) * heightMulti * meter;
 
                         //Color col = LandColor;
                         //terrain.verts[gridDimension * i + j].color = Color.FromArgb(col.R, col.G, col.B);
@@ -1811,12 +1790,12 @@ namespace OpenTk26_3
             public Terrain() //terrain for landscape
             {
 
-                PerlinHeightsForTerrainArray(LandColor);
+                PerlinHeightsForTerrainArray(landColor);
                 terrain.resetBuffers();
             }
-            public Terrain(bool UNUSED) //terrain for track, uses wavefunctioncollapse
+            public Terrain(bool DifferentConstructorLol) //terrain for track, uses wavefunctioncollapse
             {
-                PerlinHeightsForTerrainArray(TrackColor); 
+                PerlinHeightsForTerrainArray(trackColor); 
 
                 WaveFunctionCollapse[,] track = new WaveFunctionCollapse[trackSize, trackSize];
                 //start position and checkpoint position
@@ -1839,27 +1818,27 @@ namespace OpenTk26_3
                         y %= (gridDimension/trackGrid);
 
                         bool a = false;
-                        if ("|" == track[y, x].name && (i % trackGrid > trackMin && i % trackGrid < trackMax))
+                        if ('|' == track[y, x].name && (i % trackGrid > trackMin && i % trackGrid < trackMax))
                         {
                             a = true;
                         }
-                        else if ("-" == track[y, x].name && (j % trackGrid > trackMin && j % trackGrid < trackMax))
+                        else if ('-' == track[y, x].name && (j % trackGrid > trackMin && j % trackGrid < trackMax))
                         {
                             a = true;
                         }
-                        else if ("L" == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid < trackMax) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid > trackMin)))
+                        else if ('L' == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid < trackMax) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid > trackMin)))
                         {
                             a = true;
                         }
-                        else if ("7" == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid > trackMin) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid < trackMax)))
+                        else if ('7' == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid > trackMin) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid < trackMax)))
                         {
                             a = true;
                         }
-                        else if ("J" == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid < trackMax) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid < trackMax)))
+                        else if ('J' == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid < trackMax) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid < trackMax)))
                         {
                             a = true;
                         }
-                        else if ("F" == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid > trackMin) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid > trackMin)))
+                        else if ('F' == track[y, x].name && ((trackMin < i % trackGrid && i % trackGrid < trackMax && j % trackGrid > trackMin) || (trackMin < j % trackGrid && j % trackGrid < trackMax && i % trackGrid > trackMin)))
                         {
                             a = true;
                         }
@@ -1894,82 +1873,83 @@ namespace OpenTk26_3
                 public int x;
                 public int y;
 
-                public string Up;
-                public string Down;
-                public string Left;
-                public string Right;
+                //0 = not track, 1 = track, 2 = neither/both
+                public byte Up;
+                public byte Down;
+                public byte Left;
+                public byte Right;
 
-                public string name;
+                public char name;
 
-                public static Dictionary<string, string[]> lookup = new Dictionary<string, string[]>()
+                public static Dictionary<char, byte[]> lookup = new Dictionary<char, byte[]>()
             {
-                { "Air",new string[]
+                { 'A',new byte[]
                 {
-                    "x",
-                    "x",
-                    "x",
-                    "x"
+                    0,
+                    0,
+                    0,
+                    0
                 }
                 },
 
-                { "|",new string[]
+                { '|',new byte[]
                 {
-                    " ",
-                    " ",
-                    "x",
-                    "x"
+                    1,
+                    1,
+                    0,
+                    0
                 }
                 },
 
-                { "-",new string[]
+                { '-',new byte[]
                 {
-                    "x",
-                    "x",
-                    " ",
-                    " "
+                    0,
+                    0,
+                    1,
+                    1
                 }
                 },
 
-                { "L",new string[]
+                { 'L',new byte[]
                 {
-                    " ",
-                    "x",
-                    "x",
-                    " "
+                    1,
+                    0,
+                    0,
+                    1
                 }
                 },
 
-                { "7",new string[]
+                { '7',new byte[]
                 {
-                    "x",
-                    " ",
-                    " ",
-                    "x"
+                    0,
+                    1,
+                    1,
+                    0
                 }
                 },
 
-                { "F",new string[]
+                { 'F',new byte[]
                 {
-                    "x",
-                    " ",
-                    "x",
-                    " "
+                    0,
+                    1,
+                    0,
+                    1
                 }
                 },
 
-                { "J",new string[]
+                { 'J',new byte[]
                 {
-                    " ",
-                    "x",
-                    " ",
-                    "x"
+                    1,
+                    0,
+                    1,
+                    0
                 }
                 },
             };
 
-                public List<string> possibilities = new List<string>();
+                public List<char> possibilities = new List<char>();
 
-                public WaveFunctionCollapse(string name)
+                public WaveFunctionCollapse(char name)
                 {
                     this.name = name;
                 }
@@ -1982,11 +1962,11 @@ namespace OpenTk26_3
                         {
                             if (i == 0 || j == 0 || i == track.GetLength(0) - 1 || j == track.GetLength(1) - 1)
                             {
-                                track[i, j] = new WaveFunctionCollapse("Air");
-                                track[i, j].Up = "x";
-                                track[i, j].Down = "x";
-                                track[i, j].Left = "x";
-                                track[i, j].Right = "x";
+                                track[i, j] = new WaveFunctionCollapse('A');
+                                track[i, j].Up = 0;
+                                track[i, j].Down = 0;
+                                track[i, j].Left = 0;
+                                track[i, j].Right = 0;
                                 track[i, j].x = j;
                                 track[i, j].y = i;
                             }
@@ -2004,113 +1984,113 @@ namespace OpenTk26_3
                     {
                         for (int j = 1; j < track.GetLength(0) - 1; j++)
                         {
-                            string up = "";
-                            string down = "";
-                            string left = "";
-                            string right = "";
+                            byte up = 3;
+                            byte down = 3;
+                            byte left = 3;
+                            byte right = 3;
 
                             if (track[i, j] == null)
                             {
                                 //up
                                 if (track[i - 1, j] == null)
                                 {
-                                    up = "y";
+                                    up = 2;
                                 }
-                                else if (track[i - 1, j].Down == "x")
+                                else if (track[i - 1, j].Down == 0)
                                 {
-                                    up = "x";
+                                    up = 0;
                                 }
                                 else
                                 {
-                                    up = " ";
+                                    up = 1;
                                 }
 
                                 //down
                                 if (track[i + 1, j] == null)
                                 {
-                                    down = "y";
+                                    down = 2;
                                 }
-                                else if (track[i + 1, j].Up == "x")
+                                else if (track[i + 1, j].Up == 0)
                                 {
-                                    down = "x";
+                                    down = 0;
                                 }
                                 else
                                 {
-                                    down = " ";
+                                    down = 1;
                                 }
 
                                 //left
                                 if (track[i, j + 1] == null)
                                 {
-                                    right = "y";
+                                    right = 2;
                                 }
-                                else if (track[i, j + 1].Left == "x")
+                                else if (track[i, j + 1].Left == 0)
                                 {
-                                    right = "x";
+                                    right = 0;
                                 }
                                 else
                                 {
-                                    right = " ";
+                                    right = 1;
                                 }
 
                                 //right
                                 if (track[i, j - 1] == null)
                                 {
-                                    left = "y";
+                                    left = 2;
                                 }
-                                else if (track[i, j - 1].Right == "x")
+                                else if (track[i, j - 1].Right == 0)
                                 {
-                                    left = "x";
+                                    left = 0;
                                 }
                                 else
                                 {
-                                    left = " ";
+                                    left = 1;
                                 }
 
-                                tiles.Add(new WaveFunctionCollapse("Unassaigned"));
+                                tiles.Add(new WaveFunctionCollapse('U'));
                                 tiles.Last().x = j;
                                 tiles.Last().y = i;
 
                                 //air
-                                if ((up == "y" || up == "x") && (down == "y" || down == "x") && (left == "y" || left == "x") && (right == "y" || right == "x"))
+                                if ((up == 2 || up == 0) && (down == 2 || down == 0) && (left == 2 || left == 0) && (right == 2 || right == 0))
                                 {
-                                    tiles.Last().possibilities.Add("Air");
+                                    tiles.Last().possibilities.Add('A');
                                 }
 
                                 //|
-                                if ((up == "y" || up == " ") && (down == "y" || down == " ") && (left == "y" || left == "x") && (right == "y" || right == "x"))
+                                if ((up == 2 || up == 1) && (down == 2 || down == 1) && (left == 2 || left == 0) && (right == 2 || right == 0))
                                 {
-                                    tiles.Last().possibilities.Add("|");
+                                    tiles.Last().possibilities.Add('|');
                                 }
 
                                 //-
-                                if ((up == "y" || up == "x") && (down == "y" || down == "x") && (left == "y" || left == " ") && (right == "y" || right == " "))
+                                if ((up == 2 || up == 0) && (down == 2 || down == 0) && (left == 2 || left == 1) && (right == 2 || right == 1))
                                 {
-                                    tiles.Last().possibilities.Add("-");
+                                    tiles.Last().possibilities.Add('-');
                                 }
 
                                 //L
-                                if ((up == "y" || up == " ") && (down == "y" || down == "x") && (left == "y" || left == "x") && (right == "y" || right == " "))
+                                if ((up == 2 || up == 1) && (down == 2 || down == 0) && (left == 2 || left == 0) && (right == 2 || right == 1))
                                 {
-                                    tiles.Last().possibilities.Add("L");
+                                    tiles.Last().possibilities.Add('L');
                                 }
 
                                 //7
-                                if ((up == "y" || up == "x") && (down == "y" || down == " ") && (left == "y" || left == " ") && (right == "y" || right == "x"))
+                                if ((up == 2 || up == 0) && (down == 2 || down == 1) && (left == 2 || left == 1) && (right == 2 || right == 0))
                                 {
-                                    tiles.Last().possibilities.Add("7");
+                                    tiles.Last().possibilities.Add('7');
                                 }
 
                                 //F
-                                if ((up == "y" || up == "x") && (down == "y" || down == " ") && (left == "y" || left == "x") && (right == "y" || right == " "))
+                                if ((up == 2 || up == 0) && (down == 2 || down == 1) && (left == 2 || left == 0) && (right == 2 || right == 1))
                                 {
-                                    tiles.Last().possibilities.Add("F");
+                                    tiles.Last().possibilities.Add('F');
                                 }
 
                                 //J
-                                if ((up == "y" || up == " ") && (down == "y" || down == "x") && (left == "y" || left == " ") && (right == "y" || right == "x"))
+                                if ((up == 2 || up == 1) && (down == 2 || down == 0) && (left == 2 || left == 1) && (right == 2 || right == 0))
                                 {
-                                    tiles.Last().possibilities.Add("J");
+                                    tiles.Last().possibilities.Add('J');
                                 }
                             }
                         }
@@ -2131,11 +2111,11 @@ namespace OpenTk26_3
                         int w = rand.Next(2, track.GetLength(0) - 4);
                         startPosition = new Vector2(z, w);
                         //Console.WriteLine(startPos.X + "  " + startPos.Y);
-                        track[w, z] = new WaveFunctionCollapse("|");
-                        track[w, z].Up = " ";
-                        track[w, z].Down = " ";
-                        track[w, z].Left = "x";
-                        track[w, z].Right = "x";
+                        track[w, z] = new WaveFunctionCollapse('|');
+                        track[w, z].Up = 1;
+                        track[w, z].Down = 1;
+                        track[w, z].Left = 0;
+                        track[w, z].Right = 0;
 
                         while (true)
                         {
@@ -2162,14 +2142,14 @@ namespace OpenTk26_3
 
 
                                 //A.name = A.possibilities[rand.Next(0, A.possibilities.Count)];
-                                foreach (string possibility in A.possibilities)
+                                foreach (char possibility in A.possibilities)
                                 {//if a tile is able to become Air then I must pick that otherwise multiple loops of track would be generated
-                                    if (possibility == "Air")
+                                    if (possibility == 'A')
                                     {
-                                        A.name = "Air";
+                                        A.name = 'A';
                                     }
                                 }
-                                if (A.name == "Unassaigned")
+                                if (A.name == 'U')
                                 {
                                     if (A.possibilities.Count() == 0)
                                     {
@@ -2243,7 +2223,7 @@ namespace OpenTk26_3
                     {
                         for (int j = 0; j < track.GetLength(1); j++)
                         {
-                            Console.Write(track[i, j].name == "Air" ? " " : track[i, j].name);
+                            Console.Write(track[i, j].name == 'A' ? " " : track[i, j].name.ToString());
                         }
                         Console.WriteLine();
                     }
@@ -2281,7 +2261,7 @@ namespace OpenTk26_3
                         discoverred[y, x] = true;
                         switch (track[y, x].name)
                         {
-                            case "|":
+                            case '|':
                                 if ("F|7".Contains(track[y - 1, x].name) && discoverred[y - 1, x] == false)
                                 {
                                     y -= 1;
@@ -2291,7 +2271,7 @@ namespace OpenTk26_3
                                     y += 1;
                                 }
                                 break;
-                            case "-":
+                            case '-':
                                 if ("L-F".Contains(track[y, x - 1].name) && discoverred[y, x - 1] == false)
                                 {
                                     x -= 1;
@@ -2301,7 +2281,7 @@ namespace OpenTk26_3
                                     x += 1;
                                 }
                                 break;
-                            case "L":
+                            case 'L':
                                 if ("|F7".Contains(track[y - 1, x].name) && discoverred[y - 1, x] == false)
                                 {
                                     y -= 1;
@@ -2311,7 +2291,7 @@ namespace OpenTk26_3
                                     x += 1;
                                 }
                                 break;
-                            case "7":
+                            case '7':
                                 if ("|JL".Contains(track[y + 1, x].name) && discoverred[y + 1, x] == false)
                                 {
                                     y += 1;
@@ -2321,7 +2301,7 @@ namespace OpenTk26_3
                                     x -= 1;
                                 }
                                 break;
-                            case "J":
+                            case 'J':
                                 if ("|7F".Contains(track[y - 1, x].name) && discoverred[y - 1, x] == false)
                                 {
                                     y -= 1;
@@ -2331,7 +2311,7 @@ namespace OpenTk26_3
                                     x -= 1;
                                 }
                                 break;
-                            case "F":
+                            case 'F':
                                 if ("|JL".Contains(track[y + 1, x].name) && discoverred[y + 1, x] == false)
                                 {
                                     y += 1;
@@ -2426,28 +2406,27 @@ namespace OpenTk26_3
                 public static float perlin(float x, float y)
                 {
                     //corners of a grid 
-                    int x_Floor = (int)Math.Floor(x);
-                    int x_Ceiling = x_Floor + 1;
-                    int y_Floor = (int)Math.Floor(y);
-                    int y_Ceiling = y_Floor + 1;
+                    int xFloor = (int)Math.Floor(x);
+                    int xCeiling = xFloor + 1;
+                    int yFloor = (int)Math.Floor(y);
+                    int yCeiling = yFloor + 1;
 
                     //0-1 how far along from the bottom left side is the point
-                    float x_Offset = x - (float)x_Floor;
-                    float y_Offset = y - (float)y_Floor;
+                    float x_Offset = x - (float)xFloor;
+                    float y_Offset = y - (float)yFloor;
 
-                    float temp0, temp1, interpolate1, interpolate2, value;
-
-                    //dot products find the value for the botton line of the square
-                    temp0 = Dot_position_random(x_Floor, y_Floor, x, y);
-                    temp1 = Dot_position_random(x_Ceiling, y_Floor, x, y);
-                    interpolate1 = Lerp(temp0, temp1, x_Offset);
 
                     //dot products find the value for the botton line of the square
-                    temp0 = Dot_position_random(x_Floor, y_Ceiling, x, y);
-                    temp1 = Dot_position_random(x_Ceiling, y_Ceiling, x, y);
-                    interpolate2 = Lerp(temp0, temp1, x_Offset);
+                    float bottomLeft = Dot_position_random(xFloor, yFloor, x, y);
+                    float bottomRight = Dot_position_random(xCeiling, yFloor, x, y);
+                    float interpolate1 = Lerp(bottomLeft, bottomRight, x_Offset);
 
-                    value = Lerp(interpolate1, interpolate2, y_Offset);
+                    //dot products find the value for the botton line of the square
+                    float topLeft = Dot_position_random(xFloor, yCeiling, x, y);
+                    float topRight = Dot_position_random(xCeiling, yCeiling, x, y);
+                    float interpolate2 = Lerp(topLeft, topRight, x_Offset);
+
+                    float value = Lerp(interpolate1, interpolate2, y_Offset);
 
                     return (value +0.5f);
                 }
