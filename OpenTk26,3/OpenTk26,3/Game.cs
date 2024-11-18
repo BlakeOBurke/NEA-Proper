@@ -3,6 +3,7 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Input;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -21,13 +22,13 @@ namespace OpenTk26_3
         static List<string> recordInputs = new List<string>();
         static bool ghost;
 
-        public static int screenHeight;
-        public static int screenWidth;
+        static int screenHeight;
+        static int screenWidth;
 
         static int randomSeed;
         static Random rnd;
-        static int MOUSEX, MOUSEY;
-        static int MOUSEscroll = 0;
+        static int mouseX, mouseY;
+        static int mouseScroll = 0;
         static bool quickMov = false;
         static int frameCount = 0;
         static int totalframeCount;
@@ -45,10 +46,10 @@ namespace OpenTk26_3
         const float carScale = .9f;
 
 
-        static Game.camera player = new Game.camera(0, 0, 0);
+        static Game.Camera camera = new Game.Camera(0, 0, 0);
 
-        Shader shader;
-        Color ghostColor = Color.GhostWhite;
+        static Shader shader;
+        Color ghostColor = Color.Gray;
 
         static Terrain landscape;
         static Terrain racetrack;
@@ -100,7 +101,7 @@ namespace OpenTk26_3
             Item.items.Clear();
             Kart.cars.Clear();
             Shape.shapes.Clear();
-            player = new Game.camera(0, 0, 0);
+            camera = new Game.Camera(0, 0, 0);
             totalframeCount = 0;
             recordInputs.Clear();
             if (replayInputs != null)
@@ -136,387 +137,6 @@ namespace OpenTk26_3
 
         }
 
-        static void FreeCam(ref camera cam, KeyboardState input)
-        {
-            if (input.IsKeyDown(Key.W))
-            {
-                Vector3 mov = cam.camforward();
-
-                if (quickMov)
-                {
-                    mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
-                }
-
-
-                cam.pos += new Vector3(mov[0], mov[1], mov[2]);
-            }
-            if (input.IsKeyDown(Key.S))
-            {
-                Vector3 mov = cam.camforward();
-
-                if (quickMov)
-                {
-                    mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
-                }
-
-                cam.pos += new Vector3(-mov[0], -mov[1], -mov[2]);
-
-            }
-            if (input.IsKeyDown(Key.A))
-            {
-                Vector3 mov = Vector3.Cross(cam.camforward(), new Vector3(0, -1, 0));
-
-                if (quickMov)
-                {
-                    mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
-                }
-
-                cam.pos += (new Vector3(mov[0], mov[1], mov[2]));
-
-            }
-            if (input.IsKeyDown(Key.D))
-            {
-                Vector3 mov = Vector3.Cross(cam.camforward(), new Vector3(0, -1, 0));
-
-                if (quickMov)
-                {
-                    mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
-                }
-
-                cam.pos += new Vector3(-mov[0], -mov[1], -mov[2]);
-            }
-
-            if (input.IsKeyDown(Key.ShiftLeft))
-            {
-                quickMov = true;
-            }
-            else if (input.IsKeyUp(Key.ShiftLeft))
-            {
-                quickMov = false;
-            }
-
-            if (input.IsKeyDown(Key.T))
-            {
-                player.fov -= 0.00174533f * 4;
-            }
-            else if (input.IsKeyDown(Key.G))
-            {
-                player.fov += 0.00174533f * 4;
-            }
-        } //camera lets you go anywhere, mostly left over from development
-        static void FreeMouse(ref camera cam)
-        {
-            MouseState moose = Mouse.GetState();
-            cam.direction[1] -= (moose.X - MOUSEX) * 0.001f;
-            MOUSEX = moose.X;
-
-            cam.direction[0] += (moose.Y - MOUSEY) * 0.001f;
-            MOUSEY = moose.Y;
-
-            if (cam.direction[0] > Math.PI / 2 - 0.05f)
-            {
-                cam.direction[0] = (float)Math.PI / 2 - 0.05f;
-            }
-            else if (cam.direction[0] < -Math.PI / 2 + 0.05f)
-            {
-                cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
-            }
-
-
-        } //lets you spin the mouse around freely
-
-        static void FollowCam(ref camera cam, Kart car)
-        {
-            MouseState moose = Mouse.GetState();
-            cam.direction = new Vector3((float)Math.PI/ 10f, (float)Math.Atan2(-car.getForward().X, -car.getForward().Z), 0f);
-
-
-            cam.camDistance -= (moose.ScrollWheelValue + MOUSEscroll);
-            MOUSEscroll = -moose.ScrollWheelValue;
-            if (cam.camDistance > cam.camMaxDistance) { cam.camDistance = cam.camMaxDistance; }
-            if (cam.camDistance < cam.camMinDistance) { cam.camDistance = cam.camMinDistance; }
-
-            cam.pos = car.centre - cam.camforward() * cam.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
-        } //camera follows the car, can't change what way the camera faces
-        static void World_Cam(ref camera cam)
-        {
-            float radius = 600f * meter;
-            cam.pos.X = radius * (float)Math.Cos((Math.PI/180f)*(0.5f)*totalframeCount); 
-            cam.pos.Z = radius * (float)Math.Sin((Math.PI/180f)*(0.5f)*totalframeCount);
-            Collision(landscape, new Vector3(cam.pos.X, -100, cam.pos.Z), out float height, out Vector3 normal);
-            cam.pos.Y = height + 150f;
-
-
-            cam.forward = new Vector3(cam.pos.Normalized().X,0, cam.pos.Normalized().Z);
-            //Matrix4.LookAt()
-            //FreeMouse(ref player);
-        } //camera maintains alltitude above the ground looking towards the world origin <-- uses polar curves :O
-        static void FreeFollowCam(ref camera cam, Kart car)
-        {
-            //cam.pos = car.centre;
-
-
-            MouseState moose = Mouse.GetState();
-            cam.direction[1] -= (moose.X - MOUSEX) * 0.001f;
-            MOUSEX = moose.X;
-
-            cam.direction[0] += (moose.Y - MOUSEY) * 0.001f;
-            MOUSEY = moose.Y;
-
-            if (cam.direction[0] > Math.PI / 2 - 0.05f)
-            {
-                cam.direction[0] = (float)Math.PI / 2 - 0.05f;
-            }
-            else if (cam.direction[0] < -Math.PI / 2 + 0.05f)
-            {
-                cam.direction[0] = (float)-Math.PI / 2 + 0.05f;
-            }
-            cam.pos = car.centre - cam.camforward() * cam.camDistance;
-        } //camera follows the car but can look in any direction
-        static void LooseFollowCam(ref camera cam, Kart car)
-        {
-            MouseState moose = Mouse.GetState();
-            cam.Ddirection[1] -= (moose.X - MOUSEX) * 0.001f;
-            MOUSEX = moose.X;
-
-            cam.Ddirection[0] += (moose.Y - MOUSEY) * 0.001f;
-            MOUSEY = moose.Y;
-
-            //cam.direction.Y = (float)Math.Atan2(car.getForward().X, car.getForward().Z);
-            //Console.WriteLine(moose.ScrollWheelValue);
-            //Console.WriteLine(MOUSEscroll);
-
-            cam.camDistance -= (moose.ScrollWheelValue + MOUSEscroll);
-            MOUSEscroll = -moose.ScrollWheelValue;
-            if (cam.camDistance > cam.camMaxDistance) { cam.camDistance = cam.camMaxDistance; }
-            if (cam.camDistance < cam.camMinDistance) { cam.camDistance = cam.camMinDistance; }
-
-            cam.direction = new Vector3(cam.Ddirection.X, cam.Ddirection.Y + (float)Math.Atan2(car.getForward().X, car.getForward().Z), 0f);
-
-            cam.pos = car.centre - cam.camforward() * cam.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
-
-        } //camera follows the car but the direction of the camera is fixed relative to the car
-
-        static void ReplayCar(Kart car)
-        {
-            try
-            {
-                string[] inputs = replayInputs[totalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (inputs.Contains("W"))
-                {
-                    if (inputs.Contains("S"))
-                    {
-                        car.velocity -= car.getForward() * maxCarAcceleration * 0.5f;
-                    }
-                    else
-                    {
-                        car.velocity -= car.getForward() * maxCarAcceleration;
-                    }
-                }
-                else if (inputs.Contains("S"))
-                {
-                    car.velocity += car.getForward() * maxCarAcceleration;
-                }
-
-                if (inputs.Contains("A"))
-                {
-                    if (car.velocity.Length > .5f)
-                    {
-                        car.angle.Y += car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
-                    }
-                    car.velocityMulti = 0.85f;
-                }
-                else if (inputs.Contains("D"))
-                {
-                    if (car.velocity.Length > .5f)
-                    {
-                        car.angle.Y -= car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
-                    }
-                    car.velocityMulti = 0.85f;
-                }
-                else
-                {
-                    car.velocityMulti = 1;
-                }
-            }
-            catch
-            {
-                
-            }
-        } //similar to DriveCar but uses text file of replay as a substitute for keyboard input
-        static void DriveCar(Kart car, KeyboardState input)
-        {
-            recordInputs.Add(" ");
-            if (input.IsKeyDown(Key.Up) || input.IsKeyDown(Key.W))
-            {
-                if (input.IsKeyDown(Key.S) || input.IsKeyDown(Key.Down))
-                {
-                    car.velocity -= car.getForward() * maxCarAcceleration * 0.5f;
-                    recordInputs[totalframeCount - 1] += "W S ";
-                }
-                else
-                {
-                    car.velocity -= car.getForward() * maxCarAcceleration;
-                    recordInputs[totalframeCount - 1] += "W ";
-                }
-            }
-            else if (input.IsKeyDown(Key.Down) || input.IsKeyDown(Key.S))
-            {
-                car.velocity += car.getForward() * maxCarAcceleration;
-                recordInputs[totalframeCount - 1] += "S ";
-            }
-
-            if (input.IsKeyDown(Key.Right) || input.IsKeyDown(Key.D))
-            {
-                if (car.velocity.Length > .5f)
-                {
-                    car.angle.Y -= car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
-                }
-                car.velocityMulti = 0.85f;
-                recordInputs[totalframeCount - 1] += "D ";
-            }
-
-            else if (input.IsKeyDown(Key.Left) || input.IsKeyDown(Key.A))
-            {
-                if (car.velocity.Length > .5f)
-                {
-                    car.angle.Y += car.boostDirection == 1 ? 0.03f * car.velocity.Length * tStep * 1.5f : 0.03f * car.velocity.Length * tStep;
-                }
-                car.velocityMulti = 0.85f;
-                recordInputs[totalframeCount - 1] += "A ";
-            }
-            else
-            {
-                car.velocityMulti = 1;
-            }
-        } //affects the cars velocity based on keyboard inputs
-        void MoveCars(Kart car, bool IsGhost) //terrain collision + checkpoint + speed modifiers + actually moving the car 
-        {
-            //get the height of the racectrack and the landscape
-            //get the angle from the landscape
-            //based on what height is higher the car is either on or off the grass
-            //(2x 128*128 grids of squares. based on the track that's generated by wave function collapse the areas of the 'track' grid are 'pulled up' through the 'landscape' grid so the method to determine on track or not works)
-            CollideAngle(racetrack, car/*, out Vector2 raceAngle,*/ , out float tHeight);
-            CollideAngle(landscape, car/*, out Vector2 grassAngle,*/ , out float lHeight);
-
-            //do some gravity yeah
-            car.centre.Y += gravity * tStep;
-
-            if (tHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y || lHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y)
-            {
-                car.centre.Y = (float)Math.Max(lHeight, tHeight) + car.dimensions.Y / 2f;
-            }
-            //actual ongrass check, this will affect speed later
-            if (lHeight > tHeight)
-            {
-                car.onGrass = true;
-            }
-            else
-            {//check checkpoints
-                car.onGrass = false;
-
-                Vector2 carPos = car.centre.Zx;
-                Vector2 Checkpos = Terrain2World(racetrack.checkpointPos);
-                Vector2 Startpos = Terrain2World(racetrack.startPos);
-                Checkpos = Checkpos.Yx;
-                Startpos = Startpos.Yx;
-                //fix the startpos and checkpoint pos to align them to world grid
-
-
-                //check some funky dot products to see if the car is in a square of the checkpoint or start
-                //^generate vectors from opposite corners of a square to a point (the cars location). if those vectors point 'towards' each other the point is in the square. if two vectors point towards each other the dot product is < 1.
-                //(not proving the maths so please just trust me bro)
-                if (!IsGhost) //the ghost will not be able to activate checkpoints
-                {
-                    if (Vector2.Dot(carPos - (Checkpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Checkpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
-                    {
-                        if (car.checkState == 'S')
-                        {
-                            Console.WriteLine("hit checkpoint");
-                            car.checkState = 'C';
-                        }
-                    }
-                    if (Vector2.Dot(carPos - (Startpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Startpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
-                    {
-                        if (car.checkState == 'C')
-                        {
-                            car.laps++;
-                            Console.WriteLine(car.laps + "/" + targetLaps);
-                            car.checkState = 'S';
-                        }
-                    }
-                }
-
-            }
-
-            //car slows down over time, basically this is friction
-            car.velocity *= 0.95f;
-
-            float velocity_multi = car.velocityMulti;
-
-            //if car on grass AND not being affected by a boost or giant item then slow down
-            if (car.onGrass == true && car.big <= 0 && (car.boost <= 0 || car.boostDirection == -1))
-            {
-                velocity_multi *= 0.35f;
-            }   
-
-            //speed up and reduce FOV(zoom in) if speed powerupp, regular speed and FOV without 
-            if (car.boost > 0)
-            {
-                if (car.boostDirection == 1)
-                {
-                    velocity_multi *= 2;
-                    player.ZoomFast();
-                }
-                else
-                {
-                    velocity_multi *= 0.65f;
-                    player.ZoomSlow();
-                }
-
-                car.boost--;
-            }
-            else
-            {
-                player.ZoomReset();
-                car.boostDirection = 0;
-            }
-
-            //cap its velocity
-            if (car.velocity.Length > maxCarVelocity)
-            {
-                car.velocity = car.velocity.Normalized() * maxCarVelocity;
-            }
-
-            //setpos adds the vector to the cars position, this moves it
-            car.SetPos(car.velocity * tStep * velocity_multi);
-
-            //BIG BOI (scale is self explanatory)
-            if (car.big > 0 && !car.bigged)
-            {
-                car.Scale(3);
-                car.bigged = true;
-            }
-            else if (car.bigged && car.big <= 0)
-            {
-                car.Scale(1 / 3f);
-                car.bigged = false;
-            }
-            else
-            {
-                car.big--;
-            }
-
-
-            //collide after movement to fix visual issues
-            CollideAngle(racetrack, car/*, out Vector2 raceAngle,*/ , out tHeight);
-            CollideAngle(landscape, car/*, out Vector2 grassAngle,*/ , out lHeight);
-            if (tHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y || lHeight + car.dimensions.Y / 2f + 0.3f > car.centre.Y)
-            {
-                car.centre.Y = (float)Math.Max(lHeight, tHeight) + car.dimensions.Y / 2f;
-            }
-        }
-
         //built in OpenTK virtual function, run immediately
         protected override void OnLoad(EventArgs e)
         {
@@ -530,7 +150,7 @@ namespace OpenTk26_3
 
             GL.Enable(EnableCap.DepthTest);//needed to make 3D
 
-            MOUSEX = 0; MOUSEY = 0;
+            mouseX = 0; mouseY = 0;
 
             Kart.cars.Add(new Kart(randomColor()));
             Kart.cars.Last().Scale(carScale);
@@ -648,16 +268,16 @@ namespace OpenTk26_3
                 //finally set the camera to follow car[0]
                 if (replay)
                 {
-                    ReplayCar(Kart.cars[0]);
-                    LooseFollowCam(ref player, Kart.cars[0]);
+                    Kart.cars[0].ReplayCar();
+                    camera.LooseFollowCam(Kart.cars[0]);
                 }
                 else if (ghost)
                 {
-                    DriveCar(Kart.cars[0], input);
-                    ReplayCar(Kart.cars[1]);
-                    MoveCars(Kart.cars[1], true);
+                    Kart.cars[0].DriveCar(input);
+                    Kart.cars[1].ReplayCar();
+                    Kart.cars[1].MoveCars(true);
 
-                    if (totalframeCount % 2 == 0)
+                    if (totalframeCount % 3 == 0)
                     {
                         Kart.cars.Add(new Kart(ghostColor));
                         Kart.cars.Last().Scale(carScale);
@@ -665,29 +285,29 @@ namespace OpenTk26_3
                         Kart.cars.Last().setScale(Kart.cars[1].scale[0]);
                         Kart.cars.Last().angle = (Kart.cars[1].angle);
                         //cool trail of cars in ghost mode
-                        if (Kart.cars.Count() > 30)
+                        if (Kart.cars.Count() > 6)
                         {
                             Kart.cars.RemoveAt(2);
                         }
                         for (int i = 2; i < Kart.cars.Count(); i++)
                         {
-                            Kart.cars.Last().scale *= 0.995f;
+                            Kart.cars.Last().scale *= 0.997f;
                         }
                     }
-                    FollowCam(ref player, Kart.cars[0]);
+                    camera.FollowCam(Kart.cars[0]);
                 }
                 else
                 {
-                    DriveCar(Kart.cars[0], input);
-                    FollowCam(ref player, Kart.cars[0]);
+                    Kart.cars[0].DriveCar(input);
+                    camera.FollowCam(Kart.cars[0]);
                 }
-                MoveCars(Kart.cars[0], false);
+                Kart.cars[0].MoveCars(false);
 
             }
             else
             {
                 //if its finished then use the world camera to see the whole course from above
-                World_Cam(ref player);
+                camera.World_Cam();
             }
         }
         void handleItems()//does everything for items in OmUpdateFrame
@@ -724,7 +344,6 @@ namespace OpenTk26_3
             }
         }
 
-
         //built in OpenTK virtual function, run 30 times per second
         protected override void OnRenderFrame(FrameEventArgs e)
         {
@@ -734,28 +353,28 @@ namespace OpenTk26_3
             List<Shape> models = new List<Shape>();
             models.AddRange(Shape.models);
 
-            Matrix4 camMatrix = player.CameraMatrix();
+            Matrix4 camMatrix = camera.CameraMatrix();
             //for(int i = 0; i < Shape.models.Count(); i++)
             //{
             //    drawObj(Shape.models[i], camMatrix);
             //}
             foreach (Kart car in Kart.cars)
             {
-                drawObj(car, camMatrix);
+                car.drawObj(camMatrix);
             }
-            drawObj(landscape.terrain,camMatrix);
-            drawObj(racetrack.terrain,camMatrix);
+            landscape.terrain.drawObj(camMatrix);
+            racetrack.terrain.drawObj(camMatrix);
             foreach (Item item in Item.items)
             {//make the items bob up and down and spin for visual splendor 
                 item.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
                 //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
                 item.angle += 0.0174533f * item.rotateOffset;
 
-                drawObj(item, camMatrix);
+                item.drawObj(camMatrix);
             }
             foreach(Decoration decor in Decoration.decor)
             {
-                drawObj(decor,camMatrix);
+                decor.drawObj(camMatrix);
             }
 
             //reset the shader
@@ -764,49 +383,8 @@ namespace OpenTk26_3
             this.SwapBuffers();
 
         }
-        void drawObj(Shape a, Matrix4 proj)
-        {//proj is the projection matrix, the same for all objects
-                Matrix4 model = a.modelMat();
-                //get the model matrix
+        
 
-                Matrix4 aproj = Matrix4.CreateScale(a.scale) * model * proj;
-                //using matrix multiplication to apply the transformations
-
-                int uniID = GL.GetUniformLocation(3, "projection");
-
-                //Give the matrix to the GPU
-                GL.UniformMatrix4(uniID, true, ref aproj);
-
-
-
-                //instruct the GPU on what data to draw
-                GL.BindVertexArray(a.vertexArrayObject);
-
-                GL.BindBuffer(BufferTarget.ArrayBuffer, a.vertexBufferObject);
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, a.elementBufferObject);
-
-                //defines how data is sent to the GPU, 6* 32 bit numbers, a 3*32 bits for colour, 3*32 bits for location
-                GL.VertexAttribPointer(a.vertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
-                GL.EnableVertexAttribArray(a.vertexBufferObject);
-
-                GL.VertexAttribPointer(a.elementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-                GL.EnableVertexAttribArray(a.elementBufferObject);
-
-                //gpu things
-                shader.Use();
-                GL.DrawElements(PrimitiveType.Triangles, a.count, DrawElementsType.UnsignedInt, 0);
-        } //draw stuff
-        void JiggleItems(ref List<Shape> models)
-        {
-            foreach (Item item in Item.items)
-            {//make the items bob up and down and spin for visual splendor 
-                item.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
-                //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
-                item.angle += 0.0174533f * item.rotateOffset;
-
-                models.Add(item);
-            }
-        }
 
 
         ////built in OpenTK virtual function, run whenever the screen is resized so that the game doesnt crash and draws to the new dimensions
@@ -818,7 +396,7 @@ namespace OpenTk26_3
         }
 
 
-        public struct vertex // bit self expanatory
+        struct vertex // bit self expanatory
         {
             public Vector3 pos;
             public Color color;
@@ -840,25 +418,23 @@ namespace OpenTk26_3
             }
 
         }
-        public class camera // camera to get matrices for 3D 
+        class Camera // camera to get matrices for 3D 
         {
             //distance from car to camera in follow modes
-            public float camDistance = 55;
+            public float camDistance = 65;
             public float camMinDistance = 15;
-            public float camMaxDistance = 55;
+            public float camMaxDistance = 65;
             public Vector3 pos;
             public Vector3 direction;
             public Vector2 Ddirection;
             public Vector3 forward;
-            public float dx, dy, dz;
             public float fov;
-            public camera(float x, float y, float z)
+            public Camera(float x, float y, float z)
             {
                 this.pos = new Vector3(x, y, z);
                 this.direction = new Vector3(0, 0, 0);
                 this.Ddirection = new Vector2(0, (float)Math.PI);
-                dx = 0; dy = 0; dz = 1;
-                this.fov = (float)(0.0174533 * 60);
+                ZoomReset();
                 forward = new Vector3(0, 0, 1);
             }
 
@@ -871,15 +447,15 @@ namespace OpenTk26_3
             //these three change FOV based on the speed and slow powerups
             public void ZoomFast()
             {
-                fov = (float)(0.0174533 * 55);
+                fov = (float)(0.0174533 * 110);
             }
             public void ZoomReset()
             {
-                fov = (float)(0.0174533 * 60);
+                fov = (float)(0.0174533 * 90);
             }
             public void ZoomSlow()
             {
-                fov = (float)(0.0174533 * 65);
+                fov = (float)(0.0174533 * 75);
             }
 
             Matrix4 ProjectionMatrix(float near/*distance of near plane of frustum*/, float far/*distance of far plane of frustum*/, float fov, float a /*aspect ratio*/)
@@ -890,8 +466,8 @@ namespace OpenTk26_3
 
                 //Matrix4.CreatePerspectiveFieldOfView();
 
-                projector[0, 0] = (float)((2f * near) / Math.Tan(fov / 2f));
-                projector[1, 1] = (float)((a * 2f * near) / Math.Tan(fov / 2f));
+                projector[0, 0] = (float)((2f * near) / Math.Atan(fov / 2f));
+                projector[1, 1] = (float)((a * 2f * near) / Math.Atan(fov / 2f));
                 projector[2, 2] = (-far - near) / (far - near);
                 projector[2, 3] = (-2f * (far * near)) / (far - near);
                 projector[3, 2] = -1f;
@@ -899,7 +475,6 @@ namespace OpenTk26_3
 
                 return projector;
             }
-
             public Matrix4 CameraMatrix() // the projection matrix, if the game is over its slightly different as it looks to the centre of the world
             {
                 if (finished == true)
@@ -920,7 +495,7 @@ namespace OpenTk26_3
                         this.fov = 0.0001f;
                     }
                     //camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
-                    camera = camera * ProjectionMatrix(.5f, 1000f, this.fov, screenWidth / (float)screenHeight);
+                    camera = camera * ProjectionMatrix(5f, 1000f, this.fov, screenWidth / (float)screenHeight);
                     return camera;
 
                 }
@@ -940,16 +515,172 @@ namespace OpenTk26_3
                     this.fov = 0.0001f;
                 }
                 //camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
-                camer = camer * ProjectionMatrix(3.5f, 1000f, this.fov, screenWidth / (float)screenHeight);
+                camer = camer * ProjectionMatrix(5f, 1000f, this.fov, screenWidth / (float)screenHeight);
                 return camer;
             }
+            public void FreeCam(KeyboardState input)
+            {
+                if (input.IsKeyDown(Key.W))
+                {
+                    Vector3 mov = this.camforward();
+
+                    if (quickMov)
+                    {
+                        mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
+                    }
+
+
+                    this.pos += new Vector3(mov[0], mov[1], mov[2]);
+                }
+                if (input.IsKeyDown(Key.S))
+                {
+                    Vector3 mov = this.camforward();
+
+                    if (quickMov)
+                    {
+                        mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
+                    }
+
+                    this.pos += new Vector3(-mov[0], -mov[1], -mov[2]);
+
+                }
+                if (input.IsKeyDown(Key.A))
+                {
+                    Vector3 mov = Vector3.Cross(this.camforward(), new Vector3(0, -1, 0));
+
+                    if (quickMov)
+                    {
+                        mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
+                    }
+
+                    this.pos += (new Vector3(mov[0], mov[1], mov[2]));
+
+                }
+                if (input.IsKeyDown(Key.D))
+                {
+                    Vector3 mov = Vector3.Cross(this.camforward(), new Vector3(0, -1, 0));
+
+                    if (quickMov)
+                    {
+                        mov = new Vector3(mov[0] * 10, mov[1] * 10, mov[2] * 10);
+                    }
+
+                    this.pos += new Vector3(-mov[0], -mov[1], -mov[2]);
+                }
+
+                if (input.IsKeyDown(Key.ShiftLeft))
+                {
+                    quickMov = true;
+                }
+                else if (input.IsKeyUp(Key.ShiftLeft))
+                {
+                    quickMov = false;
+                }
+
+                if (input.IsKeyDown(Key.T))
+                {
+                    camera.fov -= 0.00174533f * 4;
+                }
+                else if (input.IsKeyDown(Key.G))
+                {
+                    camera.fov += 0.00174533f * 4;
+                }
+            } //camera lets you go anywhere, mostly left over from development
+            public void FreeMouse()
+            {
+                MouseState moose = Mouse.GetState();
+                this.direction[1] -= (moose.X - mouseX) * 0.001f;
+                mouseX = moose.X;
+
+                this.direction[0] += (moose.Y - mouseY) * 0.001f;
+                mouseY = moose.Y;
+
+                if (this.direction[0] > Math.PI / 2 - 0.05f)
+                {
+                    this.direction[0] = (float)Math.PI / 2 - 0.05f;
+                }
+                else if (this.direction[0] < -Math.PI / 2 + 0.05f)
+                {
+                    this.direction[0] = (float)-Math.PI / 2 + 0.05f;
+                }
+
+
+            } //lets you spin the mouse around freely
+
+            public void FollowCam(Kart car)
+            {
+                MouseState moose = Mouse.GetState();
+                this.direction = new Vector3((float)Math.PI / 10f, (float)Math.Atan2(-car.getForward().X, -car.getForward().Z), 0f);
+
+
+                this.camDistance -= (moose.ScrollWheelValue + mouseScroll);
+                mouseScroll = -moose.ScrollWheelValue;
+                if (this.camDistance > this.camMaxDistance) { this.camDistance = this.camMaxDistance; }
+                if (this.camDistance < this.camMinDistance) { this.camDistance = this.camMinDistance; }
+
+                this.pos = car.centre - this.camforward() * this.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
+            } //camera follows the car, can't change what way the camera faces
+            public void World_Cam()
+            {
+                float radius = 600f * meter;
+                this.pos.X = radius * (float)Math.Cos((Math.PI / 180f) * (0.5f) * totalframeCount);
+                this.pos.Z = radius * (float)Math.Sin((Math.PI / 180f) * (0.5f) * totalframeCount);
+                Collision(landscape, new Vector3(this.pos.X, -100, this.pos.Z), out float height, out Vector3 normal);
+                this.pos.Y = height + 150f;
+
+
+                this.forward = new Vector3(this.pos.Normalized().X, 0, this.pos.Normalized().Z);
+            } //camera maintains alltitude above the ground looking towards the world origin <-- uses polar curves :O
+            public void FreeFollowCam(Kart car)
+            {
+                //cam.pos = car.centre;
+
+
+                MouseState moose = Mouse.GetState();
+                this.direction[1] -= (moose.X - mouseX) * 0.001f;
+                mouseX = moose.X;
+
+                this.direction[0] += (moose.Y - mouseY) * 0.001f;
+                mouseY = moose.Y;
+
+                if (this.direction[0] > Math.PI / 2 - 0.05f)
+                {
+                    this.direction[0] = (float)Math.PI / 2 - 0.05f;
+                }
+                else if (this.direction[0] < -Math.PI / 2 + 0.05f)
+                {
+                    this.direction[0] = (float)-Math.PI / 2 + 0.05f;
+                }
+                this.pos = car.centre - this.camforward() * this.camDistance;
+            } //camera follows the car but can look in any direction
+            public void LooseFollowCam(Kart car)
+            {
+                MouseState moose = Mouse.GetState();
+                this.Ddirection[1] -= (moose.X - mouseX) * 0.001f;
+                mouseX = moose.X;
+
+                this.Ddirection[0] += (moose.Y - mouseY) * 0.001f;
+                mouseY = moose.Y;
+
+                //cam.direction.Y = (float)Math.Atan2(car.getForward().X, car.getForward().Z);
+                //Console.WriteLine(moose.ScrollWheelValue);
+                //Console.WriteLine(MOUSEscroll);
+
+                this.camDistance -= (moose.ScrollWheelValue + mouseScroll);
+                mouseScroll = -moose.ScrollWheelValue;
+                if (this.camDistance > this.camMaxDistance) { this.camDistance = this.camMaxDistance; }
+                if (this.camDistance < this.camMinDistance) { this.camDistance = this.camMinDistance; }
+
+                this.direction = new Vector3(this.Ddirection.X, this.Ddirection.Y + (float)Math.Atan2(car.getForward().X, car.getForward().Z), 0f);
+
+                this.pos = car.centre - this.camforward() * this.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
+
+            } //camera follows the car but the direction of the camera is fixed relative to the car
         }
-
-
 
         //a shader is just a function for the gpu to be run in parralel
         //my program has a vertex shader for every vertex and a fragment shader for every pixel
-        public class Shader //shader stuff, using OpenTK tutorial because it has to be quite exact
+        class Shader //shader stuff, using OpenTK tutorial because it has to be quite exact
         {
             int Handle;
 
@@ -1069,6 +800,39 @@ namespace OpenTk26_3
             public int vertexBufferObject;
             public int elementBufferObject;
             public int vertexArrayObject;
+
+            public void drawObj(Matrix4 proj)
+            {//proj is the projection matrix, the same for all objects
+                Matrix4 model = this.modelMat();
+                //get the model matrix
+
+                Matrix4 aproj = Matrix4.CreateScale(this.scale) * model * proj;
+                //using matrix multiplication to apply the transformations
+
+                int uniID = GL.GetUniformLocation(3, "projection");
+
+                //Give the matrix to the GPU
+                GL.UniformMatrix4(uniID, true, ref aproj);
+
+
+
+                //instruct the GPU on what data to draw
+                GL.BindVertexArray(this.vertexArrayObject);
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferObject);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.elementBufferObject);
+
+                //defines how data is sent to the GPU, 6* 32 bit numbers, a 3*32 bits for colour, 3*32 bits for location
+                GL.VertexAttribPointer(this.vertexBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+                GL.EnableVertexAttribArray(this.vertexBufferObject);
+
+                GL.VertexAttribPointer(this.elementBufferObject, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+                GL.EnableVertexAttribArray(this.elementBufferObject);
+
+                //gpu things
+                shader.Use();
+                GL.DrawElements(PrimitiveType.Triangles, this.count, DrawElementsType.UnsignedInt, 0);
+            } //draw stuff
 
             public Shape(string path, Color color)
             {
@@ -1447,6 +1211,17 @@ namespace OpenTk26_3
                     }
                 }
             }
+            public void JiggleItems(ref List<Shape> models)
+            {
+                foreach (Item item in Item.items)
+                {//make the items bob up and down and spin for visual splendor 
+                    item.centre.Y += meter * 0.3f * (float)(Math.Sin((Math.PI / 180f) * (frameCount + item.frameOffset)) - Math.Sin((Math.PI / 180f) * (frameCount - 1 + item.frameOffset)));
+                    //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
+                    item.angle += 0.0174533f * item.rotateOffset;
+
+                    models.Add(item);
+                }
+            }
         }
 
         class Boost /*ZOOOOOOOOM*/ : Item
@@ -1588,6 +1363,8 @@ namespace OpenTk26_3
             public bool onGrass = false;
             public char checkState = 'S';
             public int laps = 0;
+            static float turnSpeed = 0.5f;
+            static float turnAngle = 0.0325f;
             public static List<Kart> cars = new List<Kart>();
             public Kart(Color color) : base("Kart.obj", color) { GetDimension(); normal = new Vector3(0, 1, 0); }
             public override void Scale(float scale)
@@ -1614,6 +1391,244 @@ namespace OpenTk26_3
                 Matrix4 mov = mover * Matrix4.CreateTranslation(this.centre);
                 //Matrix4 mov = Matrix4.CreateRotationY(shapee.angle[1]) * Matrix4.CreateRotationX(shapee.angle[0]) * Matrix4.CreateRotationZ(shapee.angle[2]) * Matrix4.CreateTranslation(shapee.centre);
                 return mov;
+            }
+
+            public void ReplayCar()
+            {
+                try
+                {
+                    string[] inputs = replayInputs[totalframeCount - 1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (inputs.Contains("W"))
+                    {
+                        if (inputs.Contains("S"))
+                        {
+                            velocity -= getForward() * maxCarAcceleration * 0.5f;
+                        }
+                        else
+                        {
+                            velocity -= getForward() * maxCarAcceleration;
+                        }
+                    }
+                    else if (inputs.Contains("S"))
+                    {
+                        velocity += getForward() * maxCarAcceleration;
+                    }
+
+                    if (inputs.Contains("A"))
+                    {
+                        if (velocity.Length > turnSpeed)
+                        {
+                            angle.Y += boostDirection == 1 ? turnAngle * velocity.Length * tStep * 1.5f : turnAngle * velocity.Length * tStep;
+                        }
+                        velocityMulti = 0.85f;
+                    }
+                    else if (inputs.Contains("D"))
+                    {
+                        if (velocity.Length > turnSpeed)
+                        {
+                            angle.Y -= boostDirection == 1 ? turnAngle * velocity.Length * tStep * 1.5f : turnAngle * velocity.Length * tStep;
+                        }
+                        velocityMulti = 0.85f;
+                    }
+                    else
+                    {
+                        velocityMulti = 1;
+                    }
+                }
+                catch
+                {
+
+                }
+            } //similar to DriveCar but uses text file of replay as a substitute for keyboard input
+            public void DriveCar(KeyboardState input)
+            {
+                recordInputs.Add(" ");
+                if (input.IsKeyDown(Key.Up) || input.IsKeyDown(Key.W))
+                {
+                    if (input.IsKeyDown(Key.S) || input.IsKeyDown(Key.Down))
+                    {
+                        velocity -= getForward() * maxCarAcceleration * 0.5f;
+                        recordInputs[totalframeCount - 1] += "W S ";
+                    }
+                    else
+                    {
+                        velocity -= getForward() * maxCarAcceleration;
+                        recordInputs[totalframeCount - 1] += "W ";
+                    }
+                }
+                else if (input.IsKeyDown(Key.Down) || input.IsKeyDown(Key.S))
+                {
+                    velocity += getForward() * maxCarAcceleration;
+                    recordInputs[totalframeCount - 1] += "S ";
+                }
+
+                if (input.IsKeyDown(Key.Right) || input.IsKeyDown(Key.D))
+                {
+                    if (velocity.Length > turnSpeed)
+                    {
+                        angle.Y -= boostDirection == 1 ? turnAngle * velocity.Length * tStep * 1.5f : turnAngle * velocity.Length * tStep;
+                    }
+                    velocityMulti = 0.85f;
+                    recordInputs[totalframeCount - 1] += "D ";
+                }
+
+                else if (input.IsKeyDown(Key.Left) || input.IsKeyDown(Key.A))
+                {
+                    if (velocity.Length > turnSpeed)
+                    {
+                        angle.Y += boostDirection == 1 ? turnAngle * velocity.Length * tStep * 1.5f : turnAngle * velocity.Length * tStep;
+                    }
+                    velocityMulti = 0.85f;
+                    recordInputs[totalframeCount - 1] += "A ";
+                }
+                else
+                {
+                    velocityMulti = 1;
+                }
+            } //affects the cars velocity based on keyboard inputs
+            public void MoveCars(bool IsGhost) //terrain collision + checkpoint + speed modifiers + actually moving the car 
+            {
+                //get the height of the racectrack and the landscape
+                //get the angle from the landscape
+                //based on what height is higher the car is either on or off the grass
+                //(2x 128*128 grids of squares. based on the track that's generated by wave function collapse the areas of the 'track' grid are 'pulled up' through the 'landscape' grid so the method to determine on track or not works)
+                CollideAngle(racetrack, this/*, out Vector2 raceAngle,*/ , out float tHeight);
+                CollideAngle(landscape, this/*, out Vector2 grassAngle,*/ , out float lHeight);
+
+                //do some gravity yeah
+                centre.Y += gravity * tStep;
+
+                if (tHeight + dimensions.Y / 2f + 0.3f > centre.Y || lHeight + dimensions.Y / 2f + 0.3f > centre.Y)
+                {
+                    centre.Y = (float)Math.Max(lHeight, tHeight) + dimensions.Y / 2f;
+                }
+                //actual ongrass check, this will affect speed later
+                if (lHeight > tHeight)
+                {
+                    onGrass = true;
+                }
+                else
+                {//check checkpoints
+                    onGrass = false;
+
+                    Vector2 carPos = centre.Zx;
+                    Vector2 Checkpos = Terrain2World(racetrack.checkpointPos);
+                    Vector2 Startpos = Terrain2World(racetrack.startPos);
+                    Checkpos = Checkpos.Yx;
+                    Startpos = Startpos.Yx;
+                    //fix the startpos and checkpoint pos to align them to world grid
+
+
+                    //check some funky dot products to see if the car is in a square of the checkpoint or start
+                    //^generate vectors from opposite corners of a square to a point (the cars location). if those vectors point 'towards' each other the point is in the square. if two vectors point towards each other the dot product is < 1.
+                    //(not proving the maths so please just trust me bro)
+                    if (!IsGhost) //the ghost will not be able to activate checkpoints
+                    {
+                        if (Vector2.Dot(carPos - (Checkpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Checkpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
+                        {
+                            if (checkState == 'S')
+                            {
+                                Console.WriteLine("hit checkpoint in" + " " + totalframeCount/30f + " seconds");
+                                checkState = 'C';
+                            }
+                        }
+                        if (Vector2.Dot(carPos - (Startpos - (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f), carPos - (Startpos + (Terrain.gridDimension / (2 * Terrain.trackSize)) * new Vector2(Terrain.squareSize, Terrain.squareSize) * 0.65f)) < 1)
+                        {
+                            if (checkState == 'C')
+                            {
+                                laps++;
+                                Console.WriteLine(laps + "/" + targetLaps + " laps in" + " " + totalframeCount / 30f + " seconds");
+                                checkState = 'S';
+                            }
+                        }
+                    }
+
+                }
+
+                //car slows down over time, basically this is friction
+                velocity *= 0.95f;
+
+                float velocity_multi = this.velocityMulti;
+
+                //if car on grass AND not being affected by a boost or giant item then slow down
+                if (onGrass == true && big <= 0 && (boost <= 0 || boostDirection == -1))
+                {
+                    velocity_multi *= 0.35f;
+                }
+
+                //speed up and reduce FOV(zoom in) if speed powerupp, regular speed and FOV without 
+                if (boost > 0)
+                {
+                    if (boostDirection == 1)
+                    {
+                        velocity_multi *= 2;
+                        camera.ZoomFast();
+                    }
+                    else
+                    {
+                        velocity_multi *= 0.65f;
+                        camera.ZoomSlow();
+                    }
+
+                    boost--;
+                }
+                else
+                {
+                    camera.ZoomReset();
+                    boostDirection = 0;
+                }
+
+                //cap its velocity
+                if (velocity.Length > maxCarVelocity)
+                {
+                    velocity = velocity.Normalized() * maxCarVelocity;
+                }
+
+                //BIG BOI (scale is self explanatory)
+                if (big > 0 && !bigged)
+                {
+                    Scale(3);
+                    bigged = true;
+                }
+                else if (bigged && big <= 0)
+                {
+                    Scale(1 / 3f);
+                    bigged = false;
+                }
+                else
+                {
+                    big--;
+                }
+
+
+
+                //setpos adds the vector to the cars position, this moves it
+                SetPos(velocity * tStep * velocity_multi);
+
+                if (centre.X > Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter)
+                {
+                    centre.X = Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter;
+                }
+                else if (centre.X < -( Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter))
+                {
+                    centre.X = -(Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter);
+                }
+                if (centre.Z > Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter)
+                {
+                    centre.Z = Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter;
+                }
+                else if (centre.Z < -(Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter))
+                {
+                    centre.Z = -(Terrain.gridDimension * Terrain.squareSize * .5f - 5 * meter);
+                }
+
+                //collide after movement to fix visual issues
+                CollideAngle(racetrack, this/*, out Vector2 raceAngle,*/ , out tHeight);
+                CollideAngle(landscape, this/*, out Vector2 grassAngle,*/ , out lHeight);
+                if (tHeight + dimensions.Y / 2f + meter/2f > centre.Y || lHeight + dimensions.Y / 2f + meter / 2f > centre.Y)
+                {
+                    centre.Y = (float)Math.Max(lHeight, tHeight) + dimensions.Y / 2f;
+                }
             }
         }
 
@@ -1652,10 +1667,6 @@ namespace OpenTk26_3
 
             //get square on grid for 
 
-            //square
-            //32
-            //10
-
             //convert shape coordinates to one square on the terrain
 
             //terrain has 
@@ -1667,8 +1678,8 @@ namespace OpenTk26_3
             //add (gridDimension/2) to the shapes centre then divide by 5 and it will be in relative terrain world with each corner of a terrain piece being easily indedxable from the array 
             //check if outside the range (0,0) to (gridDimension, gridDimension)
 
-            float X = B.X / Terrain.squareSize + (Terrain.gridDimension / 2);
-            float Z = B.Z / Terrain.squareSize + (Terrain.gridDimension / 2);
+            float X = B.X / Terrain.squareSize + ((Terrain.gridDimension+1) / 2);
+            float Z = B.Z / Terrain.squareSize + ((Terrain.gridDimension+1) / 2);
 
             int X_ = (int)Math.Floor(X);
             int Z_ = (int)Math.Floor(Z);
@@ -1679,17 +1690,11 @@ namespace OpenTk26_3
             //terrain.terrain.verts[(X_+1) * Terrain.gridDimension + Z_+1].color = Color.Red;
             ////terrain.terrain.resetBuffers();
 
-            if (X_ < 0 || Z_ < 0 || X_ > Terrain.gridDimension - 2 || Z_ > Terrain.gridDimension - 2)
-            {
-                Height = 0;
-                normal = new Vector3(0, 1, 0);
-                return;
-            }
 
             //decide bottom right or top left triangle
             //corners
             Vector3[] c = new Vector3[3];
-            float[] barry = new float[3];
+            float[] barry;
             float X_L = X - X_;
             float Z_L = Z - Z_;
             if (X_L < Z_L)
@@ -1850,11 +1855,11 @@ namespace OpenTk26_3
 
                         if (a)
                         {
-                            terrain.verts[(gridDimension + 1) * i + j].pos.Y += .35f;
+                            terrain.verts[(gridDimension + 1) * i + j].pos.Y += .05f;
                         }
                         else
                         {
-                            terrain.verts[(gridDimension + 1) * i + j].pos.Y -= .2f;
+                            terrain.verts[(gridDimension + 1) * i + j].pos.Y -= .1f;
                         }
                         //colours the start tile differently
                         if (new Vector2(x, y) == StartTile || new Vector2(x, y) == CheckpointTile)
@@ -2339,17 +2344,17 @@ namespace OpenTk26_3
             }
             public class Perlin //same as wave function collapse
             {
-                public static float[,] DoPerlin(float[,] c, float Ox, float Oy, int levels)
+                public static float[,] DoPerlin(float[,] c, float xOffset, float yOffset, int octaves)
                 {
                     float[,] a = new float[c.GetLength(0), c.GetLength(1)];
                     for (int i = 0; i < a.GetLength(0); i++)
                     {
                         for (int j = 0; j < a.GetLength(1); j++)
                         {
-                            float x = Ox + i / (float)a.GetLength(0);
-                            float y = Oy + j / (float)a.GetLength(1);
+                            float x = xOffset + 2.5f*i / (float)a.GetLength(0);
+                            float y = yOffset + 2.5f*j / (float)a.GetLength(1);
 
-                            a[i, j] = SampleNoise(x, y, 1, 1, levels, 2f);
+                            a[i, j] = SampleNoise(x, y, 1, 1, octaves, 2f);
                             //a[i, j] = (float)Math.Pow(a[i, j], 1.3f);
                             //function that manipulates the output to make it nicer
                             a[i, j] = (float)Math.Pow(Math.E, a[i, j]);
@@ -2359,17 +2364,18 @@ namespace OpenTk26_3
 
                     return a;
                 }
-                static float SampleNoise(float x, float y, float amplitude, float frequency, int octaveCount, float amplitudeModifier)
+                static float SampleNoise(float x, float y, float amplitude, float frequency, int octaves, float amplitudeModifier)
                 {
                     float value = 0;
                     //add multiple 'octaves' to make it looks fancy
-                    for (int i = 0; i < octaveCount; i++)
+                    for (int i = 0; i < octaves; i++)
                     {
                         value += amplitude * perlin(x * frequency, y * frequency);
                         amplitude /= amplitudeModifier;
                         frequency *= amplitudeModifier;
                     }
-                    value = value / (float)(2 - Math.Pow(.5f, octaveCount - 1));
+                    //divide by 2- (1/2)^octaves to return to 0 -> 1
+                    value = value / (float)(2 - Math.Pow(.5f, octaves - 1));
                     return value;
                 }
 
@@ -2428,7 +2434,8 @@ namespace OpenTk26_3
 
                     float value = Lerp(interpolate1, interpolate2, y_Offset);
 
-                    return (value +0.5f);
+                    //from range -1 -> 1   to 0 -> 1
+                    return (value/2f +0.5f);
                 }
             }
         }

@@ -188,14 +188,14 @@ namespace OpenTk26_3
                     }
                 }
 
-                if (Program.Leaderboard.LeaderBoard_Exist(seed.ToString()))
+                if (Leaderboard.LeaderBoard_Exist(seed.ToString()))
                 {
                     Program.Leaderboard board = new Program.Leaderboard(seed.ToString());
                     board.AddValue(LeaderADD, finishTime);
                 }
                 else
                 {
-                    Program.Leaderboard board = new Program.Leaderboard(LeaderADD, finishTime, seed);
+                    Leaderboard board = new Leaderboard(LeaderADD, finishTime, seed);
                 }
 
             }
