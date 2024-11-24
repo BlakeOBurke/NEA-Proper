@@ -3,7 +3,6 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Input;
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -256,6 +255,7 @@ namespace OpenTk26_3
             }
 
             handleItems();
+
         }
         void carAndCamera(KeyboardState input) //car and camera stuff for the on update frame
         {
@@ -370,11 +370,11 @@ namespace OpenTk26_3
                 //item.shape.angle += 0.0174533f*new Vector3(1, 1, 1);
                 item.angle += 0.0174533f * item.rotateOffset;
 
-                item.drawObj(camMatrix);
+                if(VisibleHeuristic(item)) item.drawObj(camMatrix);
             }
             foreach(Decoration decor in Decoration.decor)
             {
-                decor.drawObj(camMatrix);
+                if(VisibleHeuristic(decor)) decor.drawObj(camMatrix);
             }
 
             //reset the shader
@@ -382,11 +382,14 @@ namespace OpenTk26_3
 
             this.SwapBuffers();
 
+            //Console.WriteLine((int)RenderFrequency);
+        }
+        static bool VisibleHeuristic(Shape a)
+        {
+            if (Math.Acos(Vector3.Dot(camera.camforward().Normalized(), (a.centre-camera.pos).Normalized())) < camera.fov/2) return true;
+            return false;
         }
         
-
-
-
         ////built in OpenTK virtual function, run whenever the screen is resized so that the game doesnt crash and draws to the new dimensions
         protected override void OnResize(EventArgs e)
         {
@@ -394,7 +397,6 @@ namespace OpenTk26_3
 
             GL.Viewport(0, 0, this.Width, this.Height);
         }
-
 
         struct vertex // bit self expanatory
         {
@@ -429,6 +431,7 @@ namespace OpenTk26_3
             public Vector2 Ddirection;
             public Vector3 forward;
             public float fov;
+            public float tanFov;
             public Camera(float x, float y, float z)
             {
                 this.pos = new Vector3(x, y, z);
@@ -448,26 +451,27 @@ namespace OpenTk26_3
             public void ZoomFast()
             {
                 fov = (float)(0.0174533 * 110);
+                tanFov = (float)Math.Atan(fov / 2f);
             }
             public void ZoomReset()
             {
                 fov = (float)(0.0174533 * 90);
+                tanFov = (float)Math.Atan(fov / 2f);
             }
             public void ZoomSlow()
             {
                 fov = (float)(0.0174533 * 75);
+                tanFov = (float)Math.Atan(fov / 2f);
             }
 
-            Matrix4 ProjectionMatrix(float near/*distance of near plane of frustum*/, float far/*distance of far plane of frustum*/, float fov, float a /*aspect ratio*/)
+            Matrix4 ProjectionMatrix(float near/*distance of near plane of frustum*/, float far/*distance of far plane of frustum*/, float tanFov2, float a /*aspect ratio*/)
             {
                 //most of the matrix is 0's so use built in function 
                 //most of the maths is in the write up
                 Matrix4 projector = Matrix4.Zero;
 
-                //Matrix4.CreatePerspectiveFieldOfView();
-
-                projector[0, 0] = (float)((2f * near) / Math.Atan(fov / 2f));
-                projector[1, 1] = (float)((a * 2f * near) / Math.Atan(fov / 2f));
+                projector[0, 0] = (float)((2f * near) / tanFov2);
+                projector[1, 1] = (float)((a * 2f * near) / tanFov2);
                 projector[2, 2] = (-far - near) / (far - near);
                 projector[2, 3] = (-2f * (far * near)) / (far - near);
                 projector[3, 2] = -1f;
@@ -495,10 +499,12 @@ namespace OpenTk26_3
                         this.fov = 0.0001f;
                     }
                     //camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
-                    camera = camera * ProjectionMatrix(5f, 1000f, this.fov, screenWidth / (float)screenHeight);
+                    camera = camera * ProjectionMatrix(5f, 1000f, this.tanFov, screenWidth / (float)screenHeight);
                     return camera;
 
                 }
+
+
                 Vector3 forw = this.camforward();
                 forw[0] += this.pos[0]; forw[1] += this.pos[1]; forw[2] += this.pos[2];
                 //MY_vector3 right = MY_vector3.cross(forw, new MY_vector3(0,-1,0)).normalise();
@@ -515,7 +521,7 @@ namespace OpenTk26_3
                     this.fov = 0.0001f;
                 }
                 //camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
-                camer = camer * ProjectionMatrix(5f, 1000f, this.fov, screenWidth / (float)screenHeight);
+                camer = camer * ProjectionMatrix(5f, 1000f, this.tanFov, screenWidth / (float)screenHeight);
                 return camer;
             }
             public void FreeCam(KeyboardState input)
@@ -606,7 +612,6 @@ namespace OpenTk26_3
 
 
             } //lets you spin the mouse around freely
-
             public void FollowCam(Kart car)
             {
                 MouseState moose = Mouse.GetState();
@@ -961,34 +966,6 @@ namespace OpenTk26_3
 
                 GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
                 GL.EnableVertexAttribArray(1);
-
-
-
-
-
-            }
-            public Shape(Color color)
-            {
-                List<vertex> ver = new List<vertex>() { new vertex(new Vector3(0, 0, 0), color), new vertex(new Vector3(0, 0, 1), color), new vertex(new Vector3(1, 0, 0), color), new vertex(new Vector3(1, 0, 1), color) };
-
-                List<uint> tria = new List<uint>() { 0, 1, 2, 1, 2, 3 };
-
-
-
-                this.verts = ver.ToArray();
-                this.triangle = tria.ToArray();
-
-
-                this.centre = new Vector3(.5f, 0, .5f);
-                this.count = this.verts.Count();
-
-                this.angle = new Vector3(0, 0, 0);
-
-
-                SetPosVerts(centre, angle);
-
-                this.centre = new Vector3(0, 0, 0);
-                shapes.Add(count);
             }
             public Vector3 avgPos()
             {
@@ -999,7 +976,6 @@ namespace OpenTk26_3
                     y += this.verts[i].pos[1];
                     z += this.verts[i].pos[2];
                 }
-
                 return new Vector3((float)(x / this.verts.Count()), (float)(y / this.verts.Count()), (float)(z / this.verts.Count()));
             }
             public void GetDimension()
@@ -1183,8 +1159,8 @@ namespace OpenTk26_3
                 {
                     centre = new Vector3(itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, itemRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
 
-                    CollideAngle(landscape, this, out float gHeight);
-                    CollideAngle(racetrack, this, out float tHeight);
+                    Game.Collide(landscape, this, out float gHeight);
+                    Game.Collide(racetrack, this, out float tHeight);
                     if (tHeight > gHeight)
                     {
                         centre.Y = dimensions.Y * 2 + tHeight;
@@ -1324,8 +1300,8 @@ namespace OpenTk26_3
                 {
                     this.centre = new Vector3(decorRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize), 0, decorRand.Next(-Terrain.gridDimension / 2 * Terrain.squareSize, Terrain.gridDimension / 2 * Terrain.squareSize));
 
-                    CollideAngle(landscape, this, out float gHeight);
-                    CollideAngle(racetrack, this, out float tHeight);
+                    Collide(landscape, this, out float gHeight);
+                    Collide(racetrack, this, out float tHeight);
                     if (tHeight < gHeight)
                     {
                         this.centre.Y = this.dimensions.Y * 2 + tHeight;
@@ -1492,8 +1468,8 @@ namespace OpenTk26_3
                 //get the angle from the landscape
                 //based on what height is higher the car is either on or off the grass
                 //(2x 128*128 grids of squares. based on the track that's generated by wave function collapse the areas of the 'track' grid are 'pulled up' through the 'landscape' grid so the method to determine on track or not works)
-                CollideAngle(racetrack, this/*, out Vector2 raceAngle,*/ , out float tHeight);
-                CollideAngle(landscape, this/*, out Vector2 grassAngle,*/ , out float lHeight);
+                Collide(racetrack, this/*, out Vector2 raceAngle,*/ , out float tHeight);
+                Collide(landscape, this/*, out Vector2 grassAngle,*/ , out float lHeight);
 
                 //do some gravity yeah
                 centre.Y += gravity * tStep;
@@ -1623,8 +1599,8 @@ namespace OpenTk26_3
                 }
 
                 //collide after movement to fix visual issues
-                CollideAngle(racetrack, this/*, out Vector2 raceAngle,*/ , out tHeight);
-                CollideAngle(landscape, this/*, out Vector2 grassAngle,*/ , out lHeight);
+                Collide(racetrack, this/*, out Vector2 raceAngle,*/ , out tHeight);
+                Collide(landscape, this/*, out Vector2 grassAngle,*/ , out lHeight);
                 if (tHeight + dimensions.Y / 2f + meter/2f > centre.Y || lHeight + dimensions.Y / 2f + meter / 2f > centre.Y)
                 {
                     centre.Y = (float)Math.Max(lHeight, tHeight) + dimensions.Y / 2f;
@@ -1633,7 +1609,7 @@ namespace OpenTk26_3
         }
 
 
-        static void CollideAngle(Terrain terrain, Shape Shape, out float height)
+        static void Collide(Terrain terrain, Shape Shape, out float height)
         {
 
             Collision(terrain, Shape.centre, out float height1, out Vector3 normal);
@@ -1641,8 +1617,7 @@ namespace OpenTk26_3
             height = height1;
 
             Shape.normal = normal.Normalized();
-        }
-        
+        }    
         static float[] Barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 position)//gets the barycentric coordinates of a point on a triangle for use in the smooth terrain collision
         {
             //since the terrain is scaled, it needs to be resized
@@ -1761,7 +1736,6 @@ namespace OpenTk26_3
                 rand = new Random(randomSeed);
                 offset = new Vector2(rand.Next(0, 1000), rand.Next(0, 1000));
             }
-
             void PerlinHeightsForTerrainArray(Color color)
             {
                 heights = Perlin.DoPerlin(heights, offset.X, offset.Y, 4);

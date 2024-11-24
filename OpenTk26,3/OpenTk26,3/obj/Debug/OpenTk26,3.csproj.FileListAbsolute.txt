@@ -440,3 +440,5 @@ H:\11.10.24 brokey\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Debug\OpenTk26,3.csproj.
 H:\11.10.24 brokey\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Debug\OpenTk26,3.csproj.Up2Date
 H:\11.10.24 brokey\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Debug\Nea_Proto.exe
 H:\11.10.24 brokey\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Debug\Nea_Proto.pdb
+C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\System.IO.Pipelines.dll
+C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\System.IO.Pipelines.xml
