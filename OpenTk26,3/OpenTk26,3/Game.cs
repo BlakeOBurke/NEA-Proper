@@ -451,17 +451,17 @@ namespace OpenTk26_3
             public void ZoomFast()
             {
                 fov = (float)(0.0174533 * 110);
-                tanFov = (float)Math.Atan(fov / 2f);
+                tanFov = (float)Math.Tan(fov / 2f);
             }
             public void ZoomReset()
             {
                 fov = (float)(0.0174533 * 90);
-                tanFov = (float)Math.Atan(fov / 2f);
+                tanFov = (float)Math.Tan(fov / 2f);
             }
             public void ZoomSlow()
             {
                 fov = (float)(0.0174533 * 75);
-                tanFov = (float)Math.Atan(fov / 2f);
+                tanFov = 1/(float)Math.Tan(fov / 2f);
             }
 
             Matrix4 ProjectionMatrix(float near/*distance of near plane of frustum*/, float far/*distance of far plane of frustum*/, float tanFov2, float a /*aspect ratio*/)
@@ -470,8 +470,8 @@ namespace OpenTk26_3
                 //most of the maths is in the write up
                 Matrix4 projector = Matrix4.Zero;
 
-                projector[0, 0] = (float)((2f * near) / tanFov2);
-                projector[1, 1] = (float)((a * 2f * near) / tanFov2);
+                projector[0, 0] = (float)((2f * near) * tanFov2);
+                projector[1, 1] = (float)((a * 2f * near) * tanFov2);
                 projector[2, 2] = (-far - near) / (far - near);
                 projector[2, 3] = (-2f * (far * near)) / (far - near);
                 projector[3, 2] = -1f;
@@ -499,7 +499,7 @@ namespace OpenTk26_3
                         this.fov = 0.0001f;
                     }
                     //camera = camera * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth / (float)screenHeight, 10f, 1000f);
-                    camera = camera * ProjectionMatrix(5f, 1000f, this.tanFov, screenWidth / (float)screenHeight);
+                    camera = camera * ProjectionMatrix(.5f, 300f, this.tanFov, screenWidth / (float)screenHeight);
                     return camera;
 
                 }
@@ -512,16 +512,9 @@ namespace OpenTk26_3
                 Matrix4 camer = Matrix4.LookAt(new Vector3(this.pos[0], this.pos[1], this.pos[2]), new Vector3(forw[0], forw[1], forw[2]), new Vector3(0, 1, 0));
 
                 //camer.Transpose();
-                if (this.fov > Math.PI - 0.001f)
-                {
-                    this.fov = (float)Math.PI - 0.001f;
-                }
-                else if (this.fov < 0.0001f)
-                {
-                    this.fov = 0.0001f;
-                }
+
                 //camer = camer * Matrix4.CreatePerspectiveFieldOfView(cam.zooooooom, screenWidth/(float)screenHeight , 3.5f, 1000f);
-                camer = camer * ProjectionMatrix(5f, 1000f, this.tanFov, screenWidth / (float)screenHeight);
+                camer = camer * ProjectionMatrix(.5f, 500f, this.tanFov, screenWidth / (float)screenHeight);
                 return camer;
             }
             public void FreeCam(KeyboardState input)
@@ -1829,7 +1822,7 @@ namespace OpenTk26_3
 
                         if (a)
                         {
-                            terrain.verts[(gridDimension + 1) * i + j].pos.Y += .05f;
+                            terrain.verts[(gridDimension + 1) * i + j].pos.Y += .25f;
                         }
                         else
                         {
@@ -1839,7 +1832,7 @@ namespace OpenTk26_3
                         if (new Vector2(x, y) == StartTile || new Vector2(x, y) == CheckpointTile)
                         {
                             Color temporaryColor = terrain.verts[(gridDimension+1) * i + j].color;
-                            terrain.verts[(gridDimension + 1) * i + j].color = Color.FromArgb(255, Math.Min(255, temporaryColor.R + 50), Math.Max(0, temporaryColor.G - 50), Math.Min(255, temporaryColor.B + 50));
+                            terrain.verts[(gridDimension + 1) * i + j].color = Color.FromArgb(255, Math.Max(0, temporaryColor.R - 50), Math.Min(255, temporaryColor.G + 60), Math.Min(255, temporaryColor.B + 60));
                         }
                     }
 

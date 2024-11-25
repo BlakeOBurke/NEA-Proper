@@ -33,7 +33,7 @@ namespace OpenTk26_3
                         if(int.TryParse(Console.ReadLine(),out int seed))
                         {
                             SEED = seed;
-                            Game ga = new Game(1200, 900, SEED);
+                            Game ga = new Game(900, 675, SEED);
                             ga.Run(30,30);
                             ga.Dispose();
                         }
@@ -41,7 +41,7 @@ namespace OpenTk26_3
                         {
                             Random a = new Random();
                             SEED = a.Next();
-                            Game ga = new Game(1200, 900, SEED);
+                            Game ga = new Game(900, 675, SEED);
                             ga.Run(30,30);
                             ga.Dispose();
                         }
@@ -55,7 +55,7 @@ namespace OpenTk26_3
                         if (int.TryParse(Console.ReadLine(), out seed) && File.Exists(seed.ToString()))
                         {
                             SEED = seed;
-                            Game ga = new Game(1200, 900, SEED, "G");
+                            Game ga = new Game(900, 675, SEED, "G");
                             ga.Run(30, 30);
                             ga.Dispose();
                             Console.WriteLine($"your seed was {SEED}");
@@ -97,7 +97,7 @@ namespace OpenTk26_3
                         if (int.TryParse(Console.ReadLine(), out seed) && File.Exists(seed.ToString()))
                         {
                             SEED = seed;
-                            Game ga = new Game(1200, 900, SEED, "R");
+                            Game ga = new Game(900, 675, SEED, "R");
                             ga.Run(30, 30);
                             ga.Dispose();
                         }

@@ -18,12 +18,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 1,
           "Children": [
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
-            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
@@ -32,9 +28,10 @@
               "RelativeDocumentMoniker": "OpenTk26,3\\Program.cs",
               "ToolTip": "H:\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Program.cs",
               "RelativeToolTip": "OpenTk26,3\\Program.cs",
-              "ViewState": "AQIAADAAAAAAAAAAAAAgwLkAAAAgAAAA",
+              "ViewState": "AQIAACsAAAAAAAAAAAAUwCwAAAAcAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-09-06T11:48:16.61Z"
+              "WhenOpened": "2024-09-06T11:48:16.61Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -44,7 +41,7 @@
               "RelativeDocumentMoniker": "OpenTk26,3\\Game.cs",
               "ToolTip": "H:\\NEA-Proper\\OpenTk26,3\\OpenTk26,3\\Game.cs",
               "RelativeToolTip": "OpenTk26,3\\Game.cs",
-              "ViewState": "AQIAABEHAAAAAAAAAAAiwGoHAAAjAAAA",
+              "ViewState": "AQIAAN8BAAAAAAAAAAAUwNkBAAA7AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-09-06T11:48:16.482Z",
               "EditorCaption": ""
