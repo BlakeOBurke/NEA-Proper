@@ -33,15 +33,16 @@ namespace OpenTk26_3
                         if(int.TryParse(Console.ReadLine(),out int seed))
                         {
                             SEED = seed;
-                            Game ga = new Game(900, 675, SEED);
+                            Game ga = new Game(1200, 900, SEED);
                             ga.Run(30,30);
                             ga.Dispose();
                         }
                         else
                         {
+                            Console.WriteLine("Invalid or no seed entered, random course selected");
                             Random a = new Random();
                             SEED = a.Next();
-                            Game ga = new Game(900, 675, SEED);
+                            Game ga = new Game(1200, 900, SEED);
                             ga.Run(30,30);
                             ga.Dispose();
                         }
@@ -55,7 +56,7 @@ namespace OpenTk26_3
                         if (int.TryParse(Console.ReadLine(), out seed) && File.Exists(seed.ToString()))
                         {
                             SEED = seed;
-                            Game ga = new Game(900, 675, SEED, "G");
+                            Game ga = new Game(1200, 900, SEED, "G");
                             ga.Run(30, 30);
                             ga.Dispose();
                             Console.WriteLine($"your seed was {SEED}");
@@ -97,7 +98,7 @@ namespace OpenTk26_3
                         if (int.TryParse(Console.ReadLine(), out seed) && File.Exists(seed.ToString()))
                         {
                             SEED = seed;
-                            Game ga = new Game(900, 675, SEED, "R");
+                            Game ga = new Game(1200, 900, SEED, "R");
                             ga.Run(30, 30);
                             ga.Dispose();
                         }
@@ -199,11 +200,18 @@ namespace OpenTk26_3
             public Leaderboard(string path)
             {
                 this.path = path;
-                string[] a = File.ReadAllLines(path + "_BOARD.txt");
-                board = new List<Leaderboard_entry>();
-                for (int i = 0; i < a.Length; i++)
+                if(File.Exists(path + "_Board.txt") == true)
                 {
-                    board.Add(new Leaderboard_entry(a[i].Split(' ')[0], float.Parse(a[i].Split(' ')[1])));
+                    string[] a = File.ReadAllLines(path + "_BOARD.txt");
+                    board = new List<Leaderboard_entry>();
+                    for (int i = 0; i < a.Length; i++)
+                    {
+                        board.Add(new Leaderboard_entry(a[i].Split(' ')[0], float.Parse(a[i].Split(' ')[1])));
+                    }
+                }
+                else
+                {
+                    
                 }
             }
             public Leaderboard_entry Fastest()
@@ -274,12 +282,7 @@ namespace OpenTk26_3
             }
             public static bool LeaderBoard_Exist(string path)
             {
-                try
-                {
-                    File.ReadAllLines(path + "_BOARD.txt");
-                    return true;
-                }
-                catch { return false; }
+                return File.Exists(path + "_BOARD.txt");
             }
         }
 
@@ -341,6 +344,7 @@ namespace OpenTk26_3
         }
         public static char Menu()
         {
+            Console.WriteLine();
             Console.WriteLine("Read Instructions 'I'");
             Console.WriteLine("Play Game 'P'");
             Console.WriteLine("View Leaderboard 'L'");

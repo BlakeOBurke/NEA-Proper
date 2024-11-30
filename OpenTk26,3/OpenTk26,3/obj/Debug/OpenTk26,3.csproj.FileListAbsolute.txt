@@ -382,7 +382,6 @@ C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\De
 C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\System.Text.Json.dll
 C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\System.Threading.Tasks.Extensions.dll
 C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\System.ValueTuple.dll
-C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\Ultz.Bcl.Half.dll
 C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\Microsoft.Bcl.AsyncInterfaces.xml
 C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\Microsoft.Bcl.HashCode.xml
 C:\Users\blake\OneDrive\Documents\GitHub\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Debug\Microsoft.DotNet.PlatformAbstractions.xml

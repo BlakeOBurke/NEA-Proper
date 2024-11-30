@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace OpenTk26_3
 {
-
+    
 
     public class Game : GameWindow
     {
@@ -242,7 +242,7 @@ namespace OpenTk26_3
                 Exit();
             }
 
-            carAndCamera(input);
+            CarAndCamera(input);
 
             //check if the first car is finished
             if (Kart.cars[0].laps == targetLaps && !finished)
@@ -254,10 +254,10 @@ namespace OpenTk26_3
                 finished = true;
             }
 
-            handleItems();
+            HandleItems();
 
         }
-        void carAndCamera(KeyboardState input) //car and camera stuff for the on update frame
+        void CarAndCamera(KeyboardState input) //car and camera stuff for the on update frame
         {
             //if not finsihed, cars need to move
             if (!finished)
@@ -310,7 +310,7 @@ namespace OpenTk26_3
                 camera.World_Cam();
             }
         }
-        void handleItems()//does everything for items in OmUpdateFrame
+        void HandleItems()//does everything for items in OmUpdateFrame
         {
             //in replays and standard mode the items are removed after they are used. in ghost mode, the ghost car does not use up items becuase that would affect the main players gameplay
             if ((ghost) && !finished)
@@ -386,8 +386,8 @@ namespace OpenTk26_3
         }
         static bool VisibleHeuristic(Shape a)
         {
-            if (Math.Acos(Vector3.Dot(camera.camforward().Normalized(), (a.centre-camera.pos).Normalized())) < camera.fov/2) return true;
-            return false;
+            //if (Math.Acos(Vector3.Dot(camera.CamForward().Normalized(), (a.centre-camera.pos).Normalized())) < camera.fov/2) return true;
+            return true;
         }
         
         ////built in OpenTK virtual function, run whenever the screen is resized so that the game doesnt crash and draws to the new dimensions
@@ -441,7 +441,7 @@ namespace OpenTk26_3
                 forward = new Vector3(0, 0, 1);
             }
 
-            public Vector3 camforward() // the direction the camera is pointing, changing direction and forward affect this
+            public Vector3 CamForward() // the direction the camera is pointing, changing direction and forward affect this
             {
                 Matrix4 rotation = Matrix4.CreateRotationZ(-direction[2]) * Matrix4.CreateRotationY(-direction[1]) * Matrix4.CreateRotationX(-direction[0]);
                 Vector4 ouut = (rotation * new Vector4(forward, 1));
@@ -505,7 +505,7 @@ namespace OpenTk26_3
                 }
 
 
-                Vector3 forw = this.camforward();
+                Vector3 forw = this.CamForward();
                 forw[0] += this.pos[0]; forw[1] += this.pos[1]; forw[2] += this.pos[2];
                 //MY_vector3 right = MY_vector3.cross(forw, new MY_vector3(0,-1,0)).normalise();
                 //MY_vector3 upp = MY_vector3.cross(right, forw);
@@ -521,7 +521,7 @@ namespace OpenTk26_3
             {
                 if (input.IsKeyDown(Key.W))
                 {
-                    Vector3 mov = this.camforward();
+                    Vector3 mov = this.CamForward();
 
                     if (quickMov)
                     {
@@ -533,7 +533,7 @@ namespace OpenTk26_3
                 }
                 if (input.IsKeyDown(Key.S))
                 {
-                    Vector3 mov = this.camforward();
+                    Vector3 mov = this.CamForward();
 
                     if (quickMov)
                     {
@@ -545,7 +545,7 @@ namespace OpenTk26_3
                 }
                 if (input.IsKeyDown(Key.A))
                 {
-                    Vector3 mov = Vector3.Cross(this.camforward(), new Vector3(0, -1, 0));
+                    Vector3 mov = Vector3.Cross(this.CamForward(), new Vector3(0, -1, 0));
 
                     if (quickMov)
                     {
@@ -557,7 +557,7 @@ namespace OpenTk26_3
                 }
                 if (input.IsKeyDown(Key.D))
                 {
-                    Vector3 mov = Vector3.Cross(this.camforward(), new Vector3(0, -1, 0));
+                    Vector3 mov = Vector3.Cross(this.CamForward(), new Vector3(0, -1, 0));
 
                     if (quickMov)
                     {
@@ -616,7 +616,7 @@ namespace OpenTk26_3
                 if (this.camDistance > this.camMaxDistance) { this.camDistance = this.camMaxDistance; }
                 if (this.camDistance < this.camMinDistance) { this.camDistance = this.camMinDistance; }
 
-                this.pos = car.centre - this.camforward() * this.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
+                this.pos = car.centre - this.CamForward() * this.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
             } //camera follows the car, can't change what way the camera faces
             public void World_Cam()
             {
@@ -649,7 +649,7 @@ namespace OpenTk26_3
                 {
                     this.direction[0] = (float)-Math.PI / 2 + 0.05f;
                 }
-                this.pos = car.centre - this.camforward() * this.camDistance;
+                this.pos = car.centre - this.CamForward() * this.camDistance;
             } //camera follows the car but can look in any direction
             public void LooseFollowCam(Kart car)
             {
@@ -671,7 +671,7 @@ namespace OpenTk26_3
 
                 this.direction = new Vector3(this.Ddirection.X, this.Ddirection.Y + (float)Math.Atan2(car.getForward().X, car.getForward().Z), 0f);
 
-                this.pos = car.centre - this.camforward() * this.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
+                this.pos = car.centre - this.CamForward() * this.camDistance * (car.scale.Length / 3f) /**(1f+car.velocity.Length/4)*/;
 
             } //camera follows the car but the direction of the camera is fixed relative to the car
         }
@@ -1832,7 +1832,7 @@ namespace OpenTk26_3
                         if (new Vector2(x, y) == StartTile || new Vector2(x, y) == CheckpointTile)
                         {
                             Color temporaryColor = terrain.verts[(gridDimension+1) * i + j].color;
-                            terrain.verts[(gridDimension + 1) * i + j].color = Color.FromArgb(255, Math.Max(0, temporaryColor.R - 50), Math.Min(255, temporaryColor.G + 60), Math.Min(255, temporaryColor.B + 60));
+                            terrain.verts[(gridDimension + 1) * i + j].color = Color.FromArgb(255, Math.Max(0, temporaryColor.R - 50), Math.Max(0, temporaryColor.G - 50), Math.Min(255, temporaryColor.B + 60));
                         }
                     }
 
