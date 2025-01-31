@@ -172,7 +172,6 @@ H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\System.Text.Encodings.Web.dll
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\System.Text.Json.dll
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\System.Threading.Tasks.Extensions.dll
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\System.ValueTuple.dll
-H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\Ultz.Bcl.Half.dll
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\Microsoft.Bcl.AsyncInterfaces.xml
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\Microsoft.Bcl.HashCode.xml
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\Microsoft.DotNet.PlatformAbstractions.xml
@@ -192,3 +191,5 @@ H:\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Release\OpenTk26,3.csproj.CoreCompileInp
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Release\OpenTk26,3.csproj.Up2Date
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Release\Nea_Proto.exe
 H:\NEA-Proper\OpenTk26,3\OpenTk26,3\obj\Release\Nea_Proto.pdb
+H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\System.IO.Pipelines.dll
+H:\NEA-Proper\OpenTk26,3\OpenTk26,3\bin\Release\System.IO.Pipelines.xml
